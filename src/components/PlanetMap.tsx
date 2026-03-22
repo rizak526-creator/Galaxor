@@ -172,9 +172,6 @@ export function PlanetMap({
                 }
               />
             ))}
-            <span className="planet-emblem">
-              <img src={activePlanet.icon} alt={activePlanet.name} />
-            </span>
           </div>
         </div>
       </div>
