@@ -590,23 +590,26 @@ function createShipModel(
   const metalPalette =
     variant === 'interceptor'
       ? {
-          hull: '#e5e7eb',
-          dark: '#64748b',
-          wing: '#f8fafc',
-          accent: '#cbd5e1',
+          hull: '#f1f5f9',
+          dark: '#cbd5e1',
+          wing: '#ffffff',
+          accent: '#e2e8f0',
+          emissive: '#cbd5e1',
         } // silver
       : variant === 'carrier'
         ? {
-            hull: '#facc15',
-            dark: '#92400e',
-            wing: '#fde68a',
-            accent: '#fbbf24',
+            hull: '#fde68a',
+            dark: '#fbbf24',
+            wing: '#fef3c7',
+            accent: '#f59e0b',
+            emissive: '#f59e0b',
           } // gold
         : {
-            hull: '#d97706',
-            dark: '#7c2d12',
-            wing: '#fdba74',
-            accent: '#f97316',
+            hull: '#fdba74',
+            dark: '#f97316',
+            wing: '#fed7aa',
+            accent: '#ea580c',
+            emissive: '#ea580c',
           } // bronze
   const hullMat = new PBRMaterial(`ship-hull-mat-${id}`, scene)
   hullMat.albedoColor = Color3.FromHexString(metalPalette.hull)
@@ -616,12 +619,14 @@ function createShipModel(
   hullMat.clearCoat.intensity = 0.86
   hullMat.clearCoat.roughness = 0.05
   hullMat.environmentIntensity = 1.3
+  hullMat.emissiveColor = Color3.FromHexString(metalPalette.emissive).scale(0.1)
 
   const darkHullMat = new PBRMaterial(`ship-dark-mat-${id}`, scene)
   darkHullMat.albedoColor = Color3.FromHexString(metalPalette.dark)
-  darkHullMat.metallic = 0.92
-  darkHullMat.roughness = 0.12
+  darkHullMat.metallic = 0.94
+  darkHullMat.roughness = 0.1
   darkHullMat.environmentIntensity = 1.15
+  darkHullMat.emissiveColor = Color3.FromHexString(metalPalette.emissive).scale(0.08)
 
   const wingMat = new PBRMaterial(`ship-wing-mat-${id}`, scene)
   wingMat.albedoColor = Color3.FromHexString(metalPalette.wing)
@@ -631,6 +636,7 @@ function createShipModel(
   wingMat.clearCoat.intensity = 0.7
   wingMat.clearCoat.roughness = 0.06
   wingMat.environmentIntensity = 1.22
+  wingMat.emissiveColor = Color3.FromHexString(metalPalette.emissive).scale(0.06)
 
   const fuselage = MeshBuilder.CreateCylinder(
     `ship-fuselage-${id}`,
