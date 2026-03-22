@@ -1,5 +1,5 @@
 import { Environment, Sparkles, Stars } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useLoader } from '@react-three/fiber'
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { useMemo, useRef, type MutableRefObject } from 'react'
@@ -21,6 +21,7 @@ type Theme = {
   emissive: string
   cloud: string
   ring: string
+  orbit: string
 }
 
 const THEMES: Record<string, Theme> = {
@@ -30,6 +31,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#22d3ee',
     cloud: '#dbeafe',
     ring: '#38bdf8',
+    orbit: '#7dd3fc',
   },
   'gas-giant': {
     base: '#f97316',
@@ -37,6 +39,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#fdba74',
     cloud: '#fed7aa',
     ring: '#fb923c',
+    orbit: '#fdba74',
   },
   nebula: {
     base: '#7c3aed',
@@ -44,6 +47,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#c084fc',
     cloud: '#f0abfc',
     ring: '#a78bfa',
+    orbit: '#c4b5fd',
   },
   'black-hole': {
     base: '#0f172a',
@@ -51,6 +55,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#f59e0b',
     cloud: '#fb923c',
     ring: '#f59e0b',
+    orbit: '#fb923c',
   },
   'ice-world': {
     base: '#60a5fa',
@@ -58,6 +63,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#bfdbfe',
     cloud: '#eff6ff',
     ring: '#93c5fd',
+    orbit: '#dbeafe',
   },
   'ancient-ruins': {
     base: '#d97706',
@@ -65,6 +71,7 @@ const THEMES: Record<string, Theme> = {
     emissive: '#facc15',
     cloud: '#fde68a',
     ring: '#fbbf24',
+    orbit: '#fde68a',
   },
 }
 
@@ -133,16 +140,26 @@ function SceneContent({
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
   const theme = THEMES[planetId] ?? THEMES['earth-like']
   const surfaceMap = useMemo(() => createPlanetTexture(theme), [theme])
+  const shipIconUrls = useMemo(() => ships.map((ship) => ship.icon), [ships])
+  const shipTextures = useLoader(THREE.TextureLoader, shipIconUrls)
+
+  for (const texture of shipTextures) {
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.minFilter = THREE.LinearMipmapLinearFilter
+    texture.magFilter = THREE.LinearFilter
+    texture.anisotropy = 4
+  }
 
   const orbitParams = useMemo(
     () =>
       ships.map((ship, index) => ({
         id: ship.id,
-        radius: 2.58 + index * 0.44,
+        radius: 2.75 + index * 0.5,
         speed: 0.42 + index * 0.14,
-        tiltX: 0.55 + index * 0.33,
+        tiltX: 0.52 + index * 0.36,
         spinY: index * 0.92,
         phase: index * 2.2,
+        bodyScale: 1 + Math.min(ship.level, 30) * 0.012,
       })),
     [ships],
   )
@@ -168,7 +185,7 @@ function SceneContent({
 
     state.camera.position.x = cameraSmoothingRef.current.x
     state.camera.position.y = cameraSmoothingRef.current.y
-    state.camera.position.z = 6.4
+    state.camera.position.z = 6.1
     state.camera.lookAt(0, 0, 0)
 
     const planetSpin = reducedMotion ? 0.01 : 0.12
@@ -201,26 +218,26 @@ function SceneContent({
       sat.position.set(x, y, z)
       sat.rotation.y = angle + Math.PI / 2
       sat.rotation.z = Math.sin(angle * 1.6) * 0.2
-      const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.75, 1.12)
+      const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.72, 1.17)
       sat.scale.setScalar(depth)
     }
   })
 
   return (
     <>
-      <color attach="background" args={['#000000']} />
-      <ambientLight intensity={0.32} />
-      <directionalLight position={[4.4, 3.8, 4.6]} intensity={1.35} color="#ffffff" />
-      <directionalLight position={[-3.2, -2.6, -1.5]} intensity={0.25} color={theme.cloud} />
+      <ambientLight intensity={0.42} />
+      <hemisphereLight intensity={0.4} color={theme.cloud} groundColor="#020617" />
+      <directionalLight position={[4.4, 3.8, 4.6]} intensity={1.25} color="#ffffff" />
+      <directionalLight position={[-3.2, -2.6, -1.5]} intensity={0.2} color={theme.cloud} />
       <pointLight position={[-3.4, -2.2, 2.4]} intensity={0.7} color={theme.ring} />
-      <Stars radius={24} depth={38} count={850} factor={2.5} fade speed={0.35} />
+      <Stars radius={26} depth={40} count={reducedMotion ? 380 : 1100} factor={2.2} fade speed={0.32} />
       <Sparkles
-        count={26}
+        count={reducedMotion ? 10 : 30}
         size={2.3}
         speed={0.18}
-        scale={[8, 8, 8]}
+        scale={[9, 9, 9]}
         color={theme.ring}
-        opacity={0.45}
+        opacity={0.34}
       />
       <Environment preset="sunset" />
 
@@ -237,6 +254,17 @@ function SceneContent({
           clearcoatRoughness={0.16}
           sheen={0.4}
           sheenColor={theme.cloud}
+        />
+      </mesh>
+
+      <mesh rotation={[0, 0, -0.2]}>
+        <sphereGeometry args={[1.96, 64, 64]} />
+        <meshStandardMaterial
+          color={theme.cloud}
+          transparent
+          opacity={0.04}
+          roughness={0.55}
+          metalness={0.06}
         />
       </mesh>
 
@@ -278,8 +306,8 @@ function SceneContent({
       {orbitParams.map((orbit, idx) => (
         <group key={`orbit-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[orbit.radius, 0.008 + idx * 0.002, 10, 220]} />
-            <meshBasicMaterial color={theme.ring} transparent opacity={0.25 + idx * 0.07} />
+            <torusGeometry args={[orbit.radius, 0.006 + idx * 0.0018, 10, 220]} />
+            <meshBasicMaterial color={theme.orbit} transparent opacity={0.16 + idx * 0.06} />
           </mesh>
         </group>
       ))}
@@ -287,28 +315,34 @@ function SceneContent({
       {orbitParams.map((orbit, index) => (
         <group key={`sat-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
           <group ref={(node: THREE.Group | null) => (satelliteRefs.current[index] = node)}>
-            <mesh>
-              <icosahedronGeometry args={[0.13, 2]} />
+            <mesh scale={orbit.bodyScale} rotation={[0.12, 0.25, 0]}>
+              <capsuleGeometry args={[0.055, 0.18, 8, 14]} />
               <meshStandardMaterial
                 color="#f8fafc"
                 emissive={theme.ring}
-                emissiveIntensity={0.5}
-                roughness={0.28}
-                metalness={0.8}
+                emissiveIntensity={0.3}
+                roughness={0.24}
+                metalness={0.9}
               />
             </mesh>
-            <mesh position={[0.19, 0, 0]} rotation={[0, 0.24, 0.2]}>
-              <boxGeometry args={[0.24, 0.04, 0.11]} />
-              <meshStandardMaterial color="#64748b" roughness={0.36} metalness={0.88} />
+            <mesh position={[0.2, 0, 0]} rotation={[0, 0.26, 0.22]}>
+              <boxGeometry args={[0.25, 0.035, 0.1]} />
+              <meshStandardMaterial color="#64748b" roughness={0.28} metalness={0.95} />
             </mesh>
-            <mesh position={[-0.19, 0, 0]} rotation={[0, -0.24, -0.2]}>
-              <boxGeometry args={[0.24, 0.04, 0.11]} />
-              <meshStandardMaterial color="#64748b" roughness={0.36} metalness={0.88} />
+            <mesh position={[-0.2, 0, 0]} rotation={[0, -0.26, -0.22]}>
+              <boxGeometry args={[0.25, 0.035, 0.1]} />
+              <meshStandardMaterial color="#64748b" roughness={0.28} metalness={0.95} />
             </mesh>
-            <mesh position={[0.02, 0.03, 0.09]}>
-              <sphereGeometry args={[0.03, 12, 12]} />
-              <meshBasicMaterial color="#ffffff" transparent opacity={0.65} />
-            </mesh>
+            <sprite position={[0, 0.12, 0]}>
+              <spriteMaterial
+                map={shipTextures[index]}
+                transparent
+                depthWrite={false}
+                sizeAttenuation
+                color="#ffffff"
+              />
+            </sprite>
+            <pointLight position={[0, 0.02, 0.08]} intensity={0.14} color={theme.ring} distance={0.8} />
           </group>
         </group>
       ))}
@@ -316,12 +350,12 @@ function SceneContent({
       {!reducedMotion && (
         <EffectComposer>
           <Bloom
-            intensity={0.62}
-            luminanceThreshold={0.22}
-            luminanceSmoothing={0.9}
+            intensity={0.72}
+            luminanceThreshold={0.2}
+            luminanceSmoothing={0.86}
             mipmapBlur
           />
-          <Noise opacity={0.02} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
+          <Noise opacity={0.016} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
           <Vignette eskil={false} offset={0.2} darkness={0.5} />
         </EffectComposer>
       )}
