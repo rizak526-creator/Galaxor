@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly TON_CONNECT_MANIFEST_URL?: string
+  readonly VITE_RELEASE_MODE?: string
+  readonly VITE_ENABLE_SOUNDS?: string
 }
 
 interface ImportMeta {

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AsteroidParticle } from './Asteroid'
 
 export type Planet = {
@@ -31,6 +31,7 @@ type PlanetMapProps = {
   ships: FleetShip[]
   isTapBurst: boolean
   particles: AsteroidParticle[]
+  auraActive?: boolean
   onSelectPlanet: (planetId: string) => void
   onTapPlanet: (x: number, y: number) => void
 }
@@ -41,12 +42,20 @@ export function PlanetMap({
   ships,
   isTapBurst,
   particles,
+  auraActive = false,
   onSelectPlanet,
   onTapPlanet,
 }: PlanetMapProps) {
   const planetRef = useRef<HTMLDivElement | null>(null)
+  const [planetTransition, setPlanetTransition] = useState(false)
   const activePlanet =
     planets.find((planet) => planet.id === activePlanetId) ?? planets[0]
+
+  useEffect(() => {
+    setPlanetTransition(true)
+    const timer = window.setTimeout(() => setPlanetTransition(false), 320)
+    return () => window.clearTimeout(timer)
+  }, [activePlanetId])
 
   const onTap = (clientX: number, clientY: number) => {
     const rect = planetRef.current?.getBoundingClientRect()
@@ -84,7 +93,9 @@ export function PlanetMap({
         <div className="planet-stage mt-4">
           <div
             ref={planetRef}
-            className={`planet-core ${activePlanet.objectClass} ${isTapBurst ? 'tap-burst' : ''}`}
+            className={`planet-core ${activePlanet.objectClass} ${isTapBurst ? 'tap-burst' : ''} ${
+              planetTransition ? 'planet-transition' : ''
+            } ${auraActive ? 'artifact-aura' : ''}`}
             onClick={(event) => onTap(event.clientX, event.clientY)}
             onTouchStart={(event) => {
               event.preventDefault()

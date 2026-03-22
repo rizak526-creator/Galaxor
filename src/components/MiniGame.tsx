@@ -16,10 +16,15 @@ type MiniGameProps = {
   active: boolean
   remainingSec: number
   cooldownSec: number
+  isLocked?: boolean
   difficulty: MiniGameDifficulty
   onDifficultyChange: (difficulty: MiniGameDifficulty) => void
   onActivate: () => void
-  onReward: (reward: MiniGameReward, message: string) => void
+  onReward: (
+    reward: MiniGameReward,
+    message: string,
+    difficulty: MiniGameDifficulty,
+  ) => void
 }
 
 export function MiniGame({
@@ -28,6 +33,7 @@ export function MiniGame({
   active,
   remainingSec,
   cooldownSec,
+  isLocked = false,
   difficulty,
   onDifficultyChange,
   onActivate,
@@ -36,36 +42,41 @@ export function MiniGame({
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null)
   const [timing, setTiming] = useState(0)
   const [tapCombo, setTapCombo] = useState(0)
+  const [dodgeScore, setDodgeScore] = useState(0)
+  const [chainBoard, setChainBoard] = useState<number[]>([])
   const timingRef = useRef(0)
   const difficultyConfig =
     difficulty === 'easy'
       ? {
-          rewardMultiplier: 0.85,
+          rewardMultiplier: 1,
           artifactChance: 0.06,
           swipeThreshold: 40,
           timingSpeed: 6,
           greenMin: 35,
           greenMax: 65,
           comboTarget: 8,
+          dodgeTarget: 4,
         }
       : difficulty === 'hard'
         ? {
-            rewardMultiplier: 1.35,
+            rewardMultiplier: 3,
             artifactChance: 0.14,
             swipeThreshold: 80,
             timingSpeed: 9,
             greenMin: 45,
             greenMax: 55,
             comboTarget: 14,
+            dodgeTarget: 10,
           }
         : {
-            rewardMultiplier: 1,
+            rewardMultiplier: 1.5,
             artifactChance: 0.08,
             swipeThreshold: 60,
             timingSpeed: 7,
             greenMin: 40,
             greenMax: 60,
             comboTarget: 10,
+            dodgeTarget: 7,
           }
 
   useEffect(() => {
@@ -78,8 +89,32 @@ export function MiniGame({
   }, [active, difficultyConfig.timingSpeed, planet.id])
 
   useEffect(() => {
-    if (!active) setTapCombo(0)
+    if (!active) {
+      setTapCombo(0)
+      setDodgeScore(0)
+      setChainBoard([])
+    }
   }, [active])
+
+  useEffect(() => {
+    if (!active || planet.id !== 'gas-giant') return
+    const timer = window.setInterval(() => {
+      setDodgeScore((prev) => {
+        const next = prev + 1
+        if (next >= difficultyConfig.dodgeTarget) {
+          giveReward(1.05, 'Asteroid Dodge: серия уклонений')
+          return 0
+        }
+        return next
+      })
+    }, 650)
+    return () => window.clearInterval(timer)
+  }, [active, difficultyConfig.dodgeTarget, planet.id])
+
+  useEffect(() => {
+    if (!active || planet.id !== 'ancient-ruins') return
+    setChainBoard(Array.from({ length: 9 }, () => Math.floor(Math.random() * 3)))
+  }, [active, planet.id])
 
   const giveReward = (multiplier: number, message: string) => {
     const base = Math.max(
@@ -94,6 +129,7 @@ export function MiniGame({
         artifactRoll: Math.random() < difficultyConfig.artifactChance,
       },
       message,
+      difficulty,
     )
   }
 
@@ -104,14 +140,16 @@ export function MiniGame({
         <button
           type="button"
           onClick={onActivate}
-          disabled={active || cooldownSec > 0}
+          disabled={active || cooldownSec > 0 || isLocked}
           className="rounded-lg bg-indigo-400 px-3 py-2 text-xs font-semibold text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300"
         >
-          {active
-            ? `Активна: ${remainingSec}с`
-            : cooldownSec > 0
-              ? `Кд: ${cooldownSec}с`
-              : 'Активировать мини-игру'}
+          {isLocked
+            ? 'Требуется TON'
+            : active
+              ? `Активна: ${remainingSec}с`
+              : cooldownSec > 0
+                ? `Кд: ${cooldownSec}с`
+                : 'Активировать мини-игру'}
         </button>
       </div>
 
@@ -142,7 +180,11 @@ export function MiniGame({
         </button>
       </div>
 
-      {!active ? (
+      {isLocked ? (
+        <p className="mt-3 text-sm text-slate-300">
+          Подключи TON для полного опыта мини-игр.
+        </p>
+      ) : !active ? (
         <p className="mt-3 text-sm text-slate-300">
           Активируй режим на 60 секунд для бонусных наград.
         </p>
@@ -204,6 +246,44 @@ export function MiniGame({
           >
             Тайминг-клик
           </button>
+        </div>
+      ) : planet.id === 'gas-giant' ? (
+        <div className="mt-3 rounded-xl border border-fuchsia-300/30 bg-fuchsia-400/10 p-4">
+          <p className="text-sm text-fuchsia-100">
+            Asteroid Dodge: кликай “Уклониться”, пока счёт не достигнет{' '}
+            {difficultyConfig.dodgeTarget}.
+          </p>
+          <button
+            type="button"
+            onClick={() => setDodgeScore((prev) => Math.max(0, prev - 1))}
+            className="mt-3 w-full rounded-lg bg-fuchsia-300 px-3 py-2 text-sm font-semibold text-slate-950"
+          >
+            Уклониться ({dodgeScore}/{difficultyConfig.dodgeTarget})
+          </button>
+        </div>
+      ) : planet.id === 'ancient-ruins' ? (
+        <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4">
+          <p className="text-sm text-amber-100">
+            Resource Chain: найди три одинаковых кристалла в сетке 3x3.
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {chainBoard.map((cell, index) => (
+              <button
+                key={`${cell}-${index}`}
+                type="button"
+                onClick={() => {
+                  const same = chainBoard.filter((value) => value === cell).length
+                  if (same >= 3) {
+                    giveReward(1.25, 'Resource Chain: успешная цепочка')
+                    setChainBoard(Array.from({ length: 9 }, () => Math.floor(Math.random() * 3)))
+                  }
+                }}
+                className="rounded-md bg-slate-800 px-2 py-2 text-lg"
+              >
+                {cell === 0 ? '💎' : cell === 1 ? '⚡' : '✨'}
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-4">

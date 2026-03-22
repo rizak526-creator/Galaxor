@@ -17,7 +17,7 @@ export function NarrativeModal({
     <div className="modal-overlay">
       <div className="modal-card">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
-        <p className="mt-3 text-sm text-slate-200">{description}</p>
+        <p className="mt-3 whitespace-pre-line text-sm text-slate-200">{description}</p>
         <button
           type="button"
           onClick={onClose}
