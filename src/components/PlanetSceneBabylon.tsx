@@ -587,36 +587,50 @@ function createShipModel(
   id: string,
   shipIndex: number,
 ): ShipExhaustFx {
-  const accent =
-    variant === 'interceptor' ? '#22d3ee' : variant === 'carrier' ? '#f97316' : '#a78bfa'
+  const metalPalette =
+    variant === 'interceptor'
+      ? {
+          hull: '#e5e7eb',
+          dark: '#64748b',
+          wing: '#f8fafc',
+          accent: '#cbd5e1',
+        } // silver
+      : variant === 'carrier'
+        ? {
+            hull: '#facc15',
+            dark: '#92400e',
+            wing: '#fde68a',
+            accent: '#fbbf24',
+          } // gold
+        : {
+            hull: '#d97706',
+            dark: '#7c2d12',
+            wing: '#fdba74',
+            accent: '#f97316',
+          } // bronze
   const hullMat = new PBRMaterial(`ship-hull-mat-${id}`, scene)
-  hullMat.albedoColor =
-    variant === 'carrier'
-      ? Color3.FromHexString('#94a3b8')
-      : variant === 'explorer'
-        ? Color3.FromHexString('#cbd5e1')
-        : Color3.FromHexString('#e2e8f0')
+  hullMat.albedoColor = Color3.FromHexString(metalPalette.hull)
   hullMat.metallic = 0.99
-  hullMat.roughness = variant === 'carrier' ? 0.14 : 0.1
+  hullMat.roughness = variant === 'carrier' ? 0.1 : 0.085
   hullMat.clearCoat.isEnabled = true
   hullMat.clearCoat.intensity = 0.86
-  hullMat.clearCoat.roughness = 0.07
-  hullMat.environmentIntensity = 1.24
+  hullMat.clearCoat.roughness = 0.05
+  hullMat.environmentIntensity = 1.3
 
   const darkHullMat = new PBRMaterial(`ship-dark-mat-${id}`, scene)
-  darkHullMat.albedoColor = Color3.FromHexString('#1e293b')
+  darkHullMat.albedoColor = Color3.FromHexString(metalPalette.dark)
   darkHullMat.metallic = 0.92
-  darkHullMat.roughness = 0.14
-  darkHullMat.environmentIntensity = 1.05
+  darkHullMat.roughness = 0.12
+  darkHullMat.environmentIntensity = 1.15
 
   const wingMat = new PBRMaterial(`ship-wing-mat-${id}`, scene)
-  wingMat.albedoColor = Color3.FromHexString('#e5e7eb')
+  wingMat.albedoColor = Color3.FromHexString(metalPalette.wing)
   wingMat.metallic = 0.97
-  wingMat.roughness = 0.11
+  wingMat.roughness = 0.08
   wingMat.clearCoat.isEnabled = true
-  wingMat.clearCoat.intensity = 0.62
-  wingMat.clearCoat.roughness = 0.1
-  wingMat.environmentIntensity = 1.1
+  wingMat.clearCoat.intensity = 0.7
+  wingMat.clearCoat.roughness = 0.06
+  wingMat.environmentIntensity = 1.22
 
   const fuselage = MeshBuilder.CreateCylinder(
     `ship-fuselage-${id}`,
@@ -747,7 +761,7 @@ function createShipModel(
   accentStrip.position.y = 0.022
   accentStrip.position.z = variant === 'carrier' ? -0.01 : 0.01
   const accentMat = new StandardMaterial(`ship-accent-mat-${id}`, scene)
-  accentMat.emissiveColor = Color3.FromHexString(accent).scale(0.88)
+  accentMat.emissiveColor = Color3.FromHexString(metalPalette.accent).scale(0.9)
   accentMat.disableLighting = true
   accentMat.alpha = 0.82
   accentStrip.material = accentMat
