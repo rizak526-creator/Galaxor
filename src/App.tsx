@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { init, miniApp, retrieveLaunchParams, viewport } from '@tma.js/sdk'
 import { TonConnectButton, useTonAddress } from '@tonconnect/ui-react'
 import type { AsteroidParticle } from './components/Asteroid'
@@ -34,6 +34,9 @@ const LazyArtifactGallery = lazy(() =>
 )
 const LazyAIPanel = lazy(() =>
   import('./components/AIPanel').then((module) => ({ default: module.AIPanel })),
+)
+const LazyPlanetScene3D = lazy(() =>
+  import('./components/PlanetScene3D').then((module) => ({ default: module.PlanetScene3D })),
 )
 
 type InitDataState = {
@@ -126,7 +129,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     id: 'gas-giant',
     name: 'Янтарный Титан',
     subtitle: 'Газовые вихри усиливают генераторы добычи',
-    unlocked: false,
+    unlocked: true,
     unlockLevel: 3,
     passiveMultiplier: 1.5,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 0 },
@@ -137,7 +140,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     id: 'nebula',
     name: 'Туманность Лиры',
     subtitle: 'Туманность замедляет добычу, но насыщает поле энергией',
-    unlocked: false,
+    unlocked: true,
     unlockLevel: 5,
     passiveMultiplier: 0.8,
     tapBonus: { crystals: 1.0, energyChance: 0.05, stardustChance: 0.2 },
@@ -148,7 +151,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     id: 'black-hole',
     name: 'Сингулярность Эреба',
     subtitle: 'Сильная гравитация резко повышает общий пассив',
-    unlocked: false,
+    unlocked: true,
     unlockLevel: 8,
     passiveMultiplier: 2.2,
     tapBonus: { crystals: 1.25, energyChance: 0.01, stardustChance: 0.4 },
@@ -159,7 +162,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     id: 'ice-world',
     name: 'Крион',
     subtitle: 'Ледяные шахты стабильно питают добывающие установки',
-    unlocked: false,
+    unlocked: true,
     unlockLevel: 12,
     passiveMultiplier: 1.8,
     tapBonus: { crystals: 1.15, energyChance: 0.03, stardustChance: 0.6 },
@@ -170,7 +173,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     id: 'ancient-ruins',
     name: 'Руины Предтеч',
     subtitle: 'Древние руины усиливают резонанс звёздной пыли',
-    unlocked: false,
+    unlocked: true,
     unlockLevel: 18,
     passiveMultiplier: 3.0,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 3.0 },
@@ -447,6 +450,10 @@ function App() {
   const isHydratedRef = useRef(false)
   const passiveBufferRef = useRef(0)
   const energyBufferRef = useRef(0)
+  const starterStageRef = useRef<HTMLDivElement | null>(null)
+  const starterHitRef = useRef<HTMLDivElement | null>(null)
+  const starterCameraTargetRef = useRef({ x: 0, y: 0 })
+  const starterLastInputAtRef = useRef(0)
   const referralLink = `https://t.me/Galaxor_bot?start=ref_${userId}`
   const walletConnected = Boolean(tonAddress)
   const activeChapter = CHAPTERS[currentChapter - 1] ?? CHAPTERS[0]
@@ -766,7 +773,7 @@ function App() {
     setPlanets((prev) =>
       prev.map((planet) => ({
         ...planet,
-        unlocked: effectiveLevel >= planet.unlockLevel,
+        unlocked: planet.unlocked || effectiveLevel >= planet.unlockLevel,
       })),
     )
   }, [level, explorerLevel])
@@ -1153,6 +1160,25 @@ function App() {
     }
   }
 
+  const updateStarterCameraTarget = (clientX: number, clientY: number) => {
+    const stageRect = starterStageRef.current?.getBoundingClientRect()
+    if (!stageRect) return
+    const nx = (clientX - stageRect.left) / stageRect.width - 0.5
+    const ny = (clientY - stageRect.top) / stageRect.height - 0.5
+    starterCameraTargetRef.current = {
+      x: Math.max(-1, Math.min(1, nx * 2)),
+      y: Math.max(-1, Math.min(1, ny * 2)),
+    }
+    starterLastInputAtRef.current = Date.now()
+  }
+
+  const handleStarterTap = (clientX: number, clientY: number) => {
+    const rect = starterHitRef.current?.getBoundingClientRect()
+    if (!rect) return
+    handleBaseTap()
+    spawnParticles(clientX - rect.left, clientY - rect.top)
+  }
+
   const spendForUpgrade = (cost: number): boolean => {
     if (freeUpgradeTokens > 0) {
       setFreeUpgradeTokens((prev) => prev - 1)
@@ -1451,18 +1477,72 @@ function App() {
             <p className="mt-3 text-lg font-semibold text-cyan-100">
               Базовый режим: 💎 {crystals}
             </p>
-            <div className="mt-4 flex justify-center">
-              <button
-                type="button"
-                onClick={handleBaseTap}
-                className={`asteroid ${isTapBurst ? 'tap-burst' : ''}`}
+            <div
+              ref={starterStageRef}
+              className="planet-stage mt-4"
+              onMouseMove={(event) =>
+                updateStarterCameraTarget(event.clientX, event.clientY)
+              }
+              onMouseLeave={() => {
+                starterLastInputAtRef.current = 0
+              }}
+              onTouchMove={(event) => {
+                const firstTouch = event.touches[0]
+                if (!firstTouch) return
+                updateStarterCameraTarget(firstTouch.clientX, firstTouch.clientY)
+              }}
+              onTouchEnd={() => {
+                starterLastInputAtRef.current = 0
+              }}
+            >
+              <div className="planet-canvas-wrap">
+                <Suspense
+                  fallback={
+                    <div className="planet-scene-fallback planet-gas" />
+                  }
+                >
+                  <LazyPlanetScene3D
+                    planetId={currentPlanetId}
+                    ships={ships}
+                    auraActive={false}
+                    isTapBurst={isTapBurst}
+                    tapBurstTick={tapBurstTick}
+                    pointerRef={starterCameraTargetRef}
+                    lastInputAtRef={starterLastInputAtRef}
+                    reducedMotion={reducedEffects}
+                  />
+                </Suspense>
+              </div>
+              <div
+                ref={starterHitRef}
+                className="planet-hit-surface"
+                onClick={(event) =>
+                  handleStarterTap(event.clientX, event.clientY)
+                }
+                onTouchStart={(event) => {
+                  event.preventDefault()
+                  const firstTouch = event.touches[0]
+                  if (!firstTouch) return
+                  handleStarterTap(firstTouch.clientX, firstTouch.clientY)
+                }}
               >
-                <span className="starter-planet-bronze" />
-                <span className="starter-ring starter-ring-a" />
-                <span className="starter-ring starter-ring-b" />
-                <span className="starter-moon starter-moon-a" />
-                <span className="starter-moon starter-moon-b" />
-              </button>
+                {particles.map((particle) => (
+                  <div
+                    key={particle.id}
+                    className="particle"
+                    style={
+                      {
+                        left: `${particle.x}px`,
+                        top: `${particle.y}px`,
+                        width: `${particle.size}px`,
+                        height: `${particle.size}px`,
+                        '--dx': `${particle.dx}px`,
+                        '--dy': `${particle.dy}px`,
+                      } as CSSProperties
+                    }
+                  />
+                ))}
+              </div>
             </div>
           </div>
         ) : (
