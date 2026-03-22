@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Black hole">
+  <radialGradient id="s" cx="50%" cy="50%" r="60%">
+    <stop offset="0%" stop-color="#020617"/>
+    <stop offset="42%" stop-color="#030712"/>
+    <stop offset="100%" stop-color="#111827"/>
+  </radialGradient>
+  <circle cx="64" cy="64" r="58" fill="url(#s)"/>
+  <circle cx="64" cy="64" r="19" fill="#000"/>
+  <circle cx="64" cy="64" r="33" fill="none" stroke="#f59e0b" stroke-width="8" opacity=".75"/>
+  <circle cx="64" cy="64" r="42" fill="none" stroke="#fb7185" stroke-width="5" opacity=".35"/>
+</svg>

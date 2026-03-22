@@ -119,7 +119,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.0,
     tapBonus: { crystals: 1.0, energyChance: 0, stardustChance: 0 },
     objectClass: 'planet-earth',
-    icon: '🌍',
+    icon: '/assets/planets/earth-like.svg',
   },
   {
     id: 'gas-giant',
@@ -130,7 +130,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.5,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 0 },
     objectClass: 'planet-gas',
-    icon: '🪐',
+    icon: '/assets/planets/gas-giant.svg',
   },
   {
     id: 'nebula',
@@ -141,7 +141,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 0.8,
     tapBonus: { crystals: 1.0, energyChance: 0.05, stardustChance: 0.2 },
     objectClass: 'planet-nebula',
-    icon: '🌌',
+    icon: '/assets/planets/nebula.svg',
   },
   {
     id: 'black-hole',
@@ -152,7 +152,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 2.2,
     tapBonus: { crystals: 1.25, energyChance: 0.01, stardustChance: 0.4 },
     objectClass: 'planet-blackhole',
-    icon: '🕳️',
+    icon: '/assets/planets/black-hole.svg',
   },
   {
     id: 'ice-world',
@@ -163,7 +163,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.8,
     tapBonus: { crystals: 1.15, energyChance: 0.03, stardustChance: 0.6 },
     objectClass: 'planet-ice',
-    icon: '🧊',
+    icon: '/assets/planets/ice-world.svg',
   },
   {
     id: 'ancient-ruins',
@@ -174,14 +174,14 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 3.0,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 3.0 },
     objectClass: 'planet-ruins',
-    icon: '🏛️',
+    icon: '/assets/planets/ancient-ruins.svg',
   },
 ]
 
 const SHIPS_TEMPLATE: FleetShip[] = [
-  { id: 'mining-drone', name: 'Mining Drone', icon: '🚀', level: 0 },
-  { id: 'explorer-scout', name: 'Explorer Scout', icon: '🛰️', level: 0 },
-  { id: 'harvester-probe', name: 'Harvester Probe', icon: '🤖', level: 0 },
+  { id: 'mining-drone', name: 'Mining Drone', icon: '/assets/ships/mining-drone.svg', level: 0 },
+  { id: 'explorer-scout', name: 'Explorer Scout', icon: '/assets/ships/explorer-scout.svg', level: 0 },
+  { id: 'harvester-probe', name: 'Harvester Probe', icon: '/assets/ships/harvester-probe.svg', level: 0 },
 ]
 
 const CHAPTERS = [

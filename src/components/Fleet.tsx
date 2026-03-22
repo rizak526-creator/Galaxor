@@ -30,7 +30,10 @@ export function Fleet({
               className="rounded-xl border border-white/10 bg-slate-900/55 p-3"
             >
               <p className="text-sm font-semibold text-cyan-200">
-                {ship.icon} {ship.name}
+                <span className="inline-flex items-center gap-2">
+                  <img src={ship.icon} alt={ship.name} className="h-5 w-5 rounded-sm" />
+                  {ship.name}
+                </span>
               </p>
               <p className="mt-1 text-xs text-slate-300">Уровень: {ship.level}</p>
               <p className="mt-1 text-xs text-amber-200">Стоимость: {cost}</p>

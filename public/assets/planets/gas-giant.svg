@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Gas giant">
+  <defs>
+    <radialGradient id="g" cx="35%" cy="26%" r="75%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="58%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="url(#g)"/>
+  <path d="M14 48c16 8 84 8 100 0" stroke="#f59e0b" stroke-width="8" opacity=".55"/>
+  <path d="M12 66c18 9 87 9 104 0" stroke="#ea580c" stroke-width="10" opacity=".48"/>
+  <path d="M16 84c17 7 79 7 96 0" stroke="#9a3412" stroke-width="7" opacity=".42"/>
+  <ellipse cx="64" cy="64" rx="69" ry="16" fill="none" stroke="#fcd34d" stroke-width="5" opacity=".5"/>
+</svg>

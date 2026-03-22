@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Nebula">
+  <defs>
+    <radialGradient id="g" cx="34%" cy="28%" r="75%">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="url(#g)"/>
+  <circle cx="45" cy="45" r="19" fill="#c084fc" opacity=".34"/>
+  <circle cx="80" cy="70" r="17" fill="#ec4899" opacity=".26"/>
+  <circle cx="61" cy="68" r="11" fill="#f5d0fe" opacity=".42"/>
+  <circle cx="36" cy="83" r="2.5" fill="#fff"/>
+  <circle cx="86" cy="34" r="2.5" fill="#fff"/>
+</svg>

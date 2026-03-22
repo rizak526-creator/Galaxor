@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Ancient ruins">
+  <defs>
+    <radialGradient id="g" cx="34%" cy="27%" r="74%">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="56%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="url(#g)"/>
+  <path d="M33 84h62M40 84V60m12 24V60m12 24V60m12 24V60m12 24V60M36 58h56l-8-10H44z" fill="none" stroke="#fde68a" stroke-width="4.5" opacity=".8"/>
+  <circle cx="64" cy="45" r="7" fill="#fef08a" opacity=".6"/>
+</svg>

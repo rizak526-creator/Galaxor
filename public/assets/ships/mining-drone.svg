@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mining drone">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect x="22" y="14" width="20" height="24" rx="6" fill="url(#g)"/>
+  <circle cx="32" cy="26" r="4" fill="#e0f2fe"/>
+  <path d="M18 42h28l-8 10H26z" fill="#22d3ee"/>
+  <path d="M14 20h8M42 20h8" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/>
+</svg>

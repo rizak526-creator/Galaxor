@@ -153,6 +153,18 @@ body {
   white-space: nowrap;
 }
 
+.planet-chip-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+.planet-chip-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .planet-chip:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -164,27 +176,81 @@ body {
 }
 
 .planet-stage {
+  --planet-size: min(300px, 64vw);
+  --orbit-outer-size: min(470px, 96vw);
   position: relative;
-  width: 360px;
+  width: min(100%, 520px);
+  height: var(--orbit-outer-size);
   max-width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 
 .planet-core {
   position: relative;
-  width: 300px;
-  height: 300px;
+  width: var(--planet-size);
+  height: var(--planet-size);
   border-radius: 50%;
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.2s ease;
-  box-shadow: 0 0 60px rgba(250, 204, 21, 0.35);
+  box-shadow:
+    0 28px 55px rgba(8, 47, 73, 0.45),
+    0 0 68px rgba(34, 211, 238, 0.28),
+    inset 0 -16px 30px rgba(2, 6, 23, 0.33);
+}
+
+.planet-core::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.52), transparent 42%),
+    radial-gradient(circle at 67% 74%, rgba(15, 23, 42, 0.3), transparent 38%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.planet-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 72% 82%, rgba(2, 6, 23, 0.45), transparent 38%),
+    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.16), transparent 34%);
+  pointer-events: none;
 }
 
 .planet-transition {
   animation: planetFadeZoom 0.32s ease;
+}
+
+.planet-emblem {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78px;
+  height: 78px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  box-shadow:
+    0 0 22px rgba(56, 189, 248, 0.35),
+    inset 0 0 12px rgba(148, 163, 184, 0.22);
+  backdrop-filter: blur(2px);
+}
+
+.planet-emblem img {
+  width: 52px;
+  height: 52px;
+  display: block;
 }
 
 .planet-emoji {
@@ -197,33 +263,51 @@ body {
 }
 
 .planet-earth {
-  background: radial-gradient(circle at 35% 30%, #86efac, #1d4ed8 65%);
+  background:
+    radial-gradient(circle at 38% 26%, #bbf7d0 0%, rgba(187, 247, 208, 0.2) 24%, transparent 44%),
+    radial-gradient(circle at 65% 68%, rgba(30, 64, 175, 0.22), transparent 40%),
+    radial-gradient(circle at 34% 62%, #60a5fa 0%, #2563eb 58%, #0b3ca8 100%);
 }
 
 .planet-gas {
-  background: radial-gradient(circle at 30% 30%, #fde68a, #f97316 65%);
+  background:
+    radial-gradient(circle at 30% 22%, #fef3c7 0%, rgba(254, 243, 199, 0.2) 26%, transparent 46%),
+    repeating-linear-gradient(165deg, rgba(251, 191, 36, 0.2) 0 12px, rgba(249, 115, 22, 0.26) 12px 25px),
+    radial-gradient(circle at 50% 58%, #fb923c 0%, #ea580c 66%, #9a3412 100%);
 }
 
 .planet-nebula {
-  background: radial-gradient(circle at 40% 35%, #a78bfa, #312e81 70%);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(216, 180, 254, 0.8), transparent 36%),
+    radial-gradient(circle at 68% 66%, rgba(236, 72, 153, 0.3), transparent 38%),
+    radial-gradient(circle at 42% 60%, #a78bfa 0%, #4c1d95 62%, #1e1b4b 100%);
 }
 
 .planet-blackhole {
-  background: radial-gradient(circle at 50% 50%, #020617 0, #111827 35%, #f59e0b 70%, #111827 100%);
+  background:
+    radial-gradient(circle at 50% 50%, #020617 0, #030712 20%, #111827 34%, transparent 35%),
+    radial-gradient(circle at 52% 48%, transparent 0 28%, rgba(245, 158, 11, 0.8) 42%, rgba(234, 88, 12, 0.45) 56%, transparent 72%),
+    radial-gradient(circle at 50% 50%, #020617 0, #0f172a 80%, #020617 100%);
 }
 
 .planet-ice {
-  background: radial-gradient(circle at 30% 25%, #bfdbfe, #38bdf8 70%);
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.8), transparent 36%),
+    radial-gradient(circle at 74% 72%, rgba(59, 130, 246, 0.24), transparent 34%),
+    linear-gradient(145deg, #dbeafe 0%, #7dd3fc 45%, #2563eb 100%);
 }
 
 .planet-ruins {
-  background: radial-gradient(circle at 30% 30%, #fef08a, #a16207 75%);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(254, 240, 138, 0.78), transparent 34%),
+    repeating-linear-gradient(140deg, rgba(120, 53, 15, 0.2) 0 14px, rgba(180, 83, 9, 0.3) 14px 28px),
+    radial-gradient(circle at 42% 56%, #facc15 0%, #a16207 72%, #78350f 100%);
 }
 
 .ship-ring {
   position: absolute;
-  width: 460px;
-  height: 460px;
+  width: var(--orbit-outer-size);
+  height: var(--orbit-outer-size);
   pointer-events: none;
 }
 
@@ -275,6 +359,12 @@ body {
 .ship-badge small {
   font-size: 0.58rem;
   opacity: 0.95;
+}
+
+.ship-icon {
+  width: 13px;
+  height: 13px;
+  display: block;
 }
 
 @keyframes orbit {

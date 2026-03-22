@@ -76,7 +76,9 @@ export function PlanetMap({
               className={`planet-chip ${isActive ? 'planet-chip-active' : ''}`}
               disabled={!planet.unlocked}
             >
-              <span>{planet.icon}</span>
+              <span className="planet-chip-icon">
+                <img src={planet.icon} alt={planet.name} />
+              </span>
               <span>{planet.name}</span>
               {!planet.unlocked && <span className="text-[10px]">Lv.{planet.unlockLevel}</span>}
             </button>
@@ -120,7 +122,9 @@ export function PlanetMap({
                 }
               />
             ))}
-            <span className="planet-emoji">{activePlanet.icon}</span>
+            <span className="planet-emblem">
+              <img src={activePlanet.icon} alt={activePlanet.name} />
+            </span>
           </div>
 
           {/* Визуал флота вокруг активной планеты */}
@@ -150,7 +154,7 @@ export function PlanetMap({
                   <span className="ship-orbit-line" />
                   <div className="ship-orbit-rotator" style={{ animationDelay: `${index * 0.7}s` }}>
                     <span className="ship-badge">
-                      {ship.icon}
+                      <img src={ship.icon} alt={ship.name} className="ship-icon" />
                       <small>Lv.{ship.level}</small>
                     </span>
                   </div>

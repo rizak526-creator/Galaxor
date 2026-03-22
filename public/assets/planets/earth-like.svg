@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Earth like">
+  <defs>
+    <radialGradient id="g" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="55%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="url(#g)"/>
+  <path d="M27 58c9-10 20-14 31-13 3 0 6 1 8 2-3 4-8 9-11 12-4 3-6 7-10 8-5 1-12-2-18-9z" fill="#16a34a" opacity=".9"/>
+  <path d="M66 66c4-4 9-7 14-7 6 1 10 4 14 7-4 6-8 10-14 11-6 1-11-3-14-11z" fill="#15803d" opacity=".88"/>
+  <circle cx="45" cy="39" r="12" fill="#fff" opacity=".25"/>
+</svg>
