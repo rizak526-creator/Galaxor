@@ -232,9 +232,12 @@ export function PlanetMap({
                     <span className="ship-orbit-line" />
                     <div className="ship-orbit-rotator" style={{ animationDelay: `${index * 0.7}s` }}>
                       <span className="ship-satellite">
+                        <span className="ship-satellite-wing ship-satellite-wing-left" />
+                        <span className="ship-satellite-wing ship-satellite-wing-right" />
                         <span className="ship-satellite-core">
-                        <img src={ship.icon} alt={ship.name} className="ship-icon" />
+                          <img src={ship.icon} alt={ship.name} className="ship-icon" />
                         </span>
+                        <span className="ship-satellite-glow" />
                         <small className="ship-level">Lv.{ship.level}</small>
                       </span>
                     </div>

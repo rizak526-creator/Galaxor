@@ -516,30 +516,80 @@ body {
   transform: translate(-50%, -50%) scale(var(--ship-scale, 1));
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  transform-style: preserve-3d;
+  animation: satelliteAttitude 3.8s ease-in-out infinite;
 }
 
 .ship-satellite-core {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.5), transparent 46%),
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.56), transparent 45%),
+    radial-gradient(circle at 68% 74%, rgba(2, 6, 23, 0.5), transparent 42%),
     linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(12, 74, 110, 0.95));
   border: 1px solid rgba(125, 211, 252, 0.6);
   box-shadow:
     0 2px 10px rgba(2, 6, 23, 0.55),
     0 0 14px var(--ship-glow, rgba(56, 189, 248, 0.35)),
     inset 0 -6px 10px rgba(2, 6, 23, 0.45);
+  position: relative;
+  transform: translateZ(6px);
+}
+
+.ship-satellite-core::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.4), transparent 54%);
+  pointer-events: none;
+}
+
+.ship-satellite-wing {
+  position: absolute;
+  width: 13px;
+  height: 6px;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, rgba(148, 163, 184, 0.7), rgba(56, 189, 248, 0.45));
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.25),
+    inset 0 0 4px rgba(255, 255, 255, 0.2);
+  top: 50%;
+  transform: translateY(-50%) translateZ(1px);
+}
+
+.ship-satellite-wing-left {
+  left: 3px;
+  transform: translateY(-50%) rotateY(28deg) translateZ(1px);
+}
+
+.ship-satellite-wing-right {
+  right: 3px;
+  transform: translateY(-50%) rotateY(-28deg) translateZ(1px);
+}
+
+.ship-satellite-glow {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--ship-glow, rgba(56, 189, 248, 0.35)) 0%, transparent 70%);
+  filter: blur(3px);
+  opacity: 0.72;
+  transform: translateZ(-2px);
 }
 
 .ship-level {
   position: absolute;
-  top: 20px;
-  right: -7px;
+  top: 22px;
+  right: -8px;
   font-size: 0.5rem;
   font-weight: 700;
   padding: 1px 4px;
@@ -554,6 +604,7 @@ body {
   height: 12px;
   display: block;
   filter: drop-shadow(0 0 3px rgba(147, 197, 253, 0.55));
+  transform: translateZ(2px);
 }
 
 @keyframes orbit {
@@ -589,6 +640,24 @@ body {
   }
   to {
     background-position: -220% 50%;
+  }
+}
+
+@keyframes satelliteAttitude {
+  0% {
+    transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(0deg) rotateX(0deg);
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(13deg) rotateX(4deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(0deg) rotateX(-3deg);
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(-12deg) rotateX(4deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(0deg) rotateX(0deg);
   }
 }
 
@@ -785,6 +854,7 @@ body {
 
 .reduced-fx .ship-orbit,
 .reduced-fx .ship-orbit-rotator,
+.reduced-fx .ship-satellite,
 .reduced-fx .planet-rotation-layer,
 .reduced-fx .planet-cloud-layer,
 .reduced-fx .ship-ring,
@@ -804,6 +874,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ship-orbit,
   .ship-orbit-rotator,
+  .ship-satellite,
   .planet-rotation-layer,
   .planet-cloud-layer,
   .ship-ring,
