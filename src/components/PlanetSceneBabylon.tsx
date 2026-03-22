@@ -41,16 +41,29 @@ type Theme = {
   orbit: string
 }
 
-type SatelliteVariant = 'drone' | 'frigate' | 'ring' | 'probe' | 'hauler'
+type ShipVariant = 'interceptor' | 'carrier' | 'explorer'
 
-type OrbitLayout = {
+type ShipOrbitLayout = {
   radius: number
   tiltX: number
   spinY: number
   speed: number
   phase: number
   reverse: boolean
-  variant: SatelliteVariant
+}
+
+type MoonLayout = {
+  radius: number
+  size: number
+  tiltX: number
+  spinY: number
+  speed: number
+  phase: number
+  base: string
+  secondary: string
+  roughness: number
+  metallic: number
+  hasRing?: boolean
 }
 
 const THEMES: Record<string, Theme> = {
@@ -98,36 +111,37 @@ const THEMES: Record<string, Theme> = {
   },
 }
 
-const PLANET_ORBIT_LAYOUTS: Record<string, OrbitLayout[]> = {
+const SHIP_ORBIT_LAYOUTS: ShipOrbitLayout[] = [
+  { radius: 2.18, tiltX: 1.05, spinY: 0.22, speed: 0.5, phase: 0.25, reverse: false },
+  { radius: 2.68, tiltX: 0.78, spinY: 0.96, speed: 0.6, phase: 2.35, reverse: false },
+  { radius: 3.08, tiltX: 1.22, spinY: 1.74, speed: 0.44, phase: 4.3, reverse: true },
+]
+
+const PLANET_MOON_LAYOUTS: Record<string, MoonLayout[]> = {
   'earth-like': [
-    { radius: 1.78, tiltX: 1.02, spinY: 0.2, speed: 0.44, phase: 0.3, reverse: false, variant: 'drone' },
-    { radius: 2.32, tiltX: 0.82, spinY: 0.86, speed: 0.58, phase: 2.4, reverse: false, variant: 'frigate' },
-    { radius: 2.86, tiltX: 1.24, spinY: 1.66, speed: 0.36, phase: 4.1, reverse: true, variant: 'ring' },
+    { radius: 3.55, size: 0.21, tiltX: 0.9, spinY: 0.42, speed: 0.16, phase: 0.25, base: '#cbd5e1', secondary: '#64748b', roughness: 0.86, metallic: 0.08 },
+    { radius: 4.08, size: 0.14, tiltX: 1.21, spinY: 1.2, speed: 0.13, phase: 2.3, base: '#fde68a', secondary: '#92400e', roughness: 0.7, metallic: 0.12 },
   ],
   'gas-giant': [
-    { radius: 2.08, tiltX: 0.95, spinY: 0.12, speed: 0.34, phase: 0.9, reverse: false, variant: 'hauler' },
-    { radius: 2.72, tiltX: 1.33, spinY: 0.92, speed: 0.41, phase: 2.8, reverse: true, variant: 'probe' },
-    { radius: 3.16, tiltX: 0.67, spinY: 1.8, speed: 0.52, phase: 4.7, reverse: false, variant: 'frigate' },
+    { radius: 3.75, size: 0.24, tiltX: 1.08, spinY: 0.3, speed: 0.12, phase: 0.8, base: '#f59e0b', secondary: '#78350f', roughness: 0.62, metallic: 0.16, hasRing: true },
+    { radius: 4.35, size: 0.18, tiltX: 0.68, spinY: 1.52, speed: 0.1, phase: 3.2, base: '#fdba74', secondary: '#9a3412', roughness: 0.66, metallic: 0.12 },
   ],
   nebula: [
-    { radius: 1.92, tiltX: 1.28, spinY: 0.35, speed: 0.62, phase: 0.5, reverse: true, variant: 'ring' },
-    { radius: 2.44, tiltX: 0.75, spinY: 1.16, speed: 0.47, phase: 2.2, reverse: false, variant: 'drone' },
-    { radius: 2.98, tiltX: 1.15, spinY: 2.3, speed: 0.55, phase: 4.05, reverse: false, variant: 'probe' },
+    { radius: 3.62, size: 0.2, tiltX: 1.22, spinY: 0.55, speed: 0.15, phase: 1.3, base: '#a78bfa', secondary: '#5b21b6', roughness: 0.52, metallic: 0.2 },
+    { radius: 4.26, size: 0.16, tiltX: 0.82, spinY: 1.86, speed: 0.12, phase: 4.1, base: '#67e8f9', secondary: '#0e7490', roughness: 0.6, metallic: 0.14, hasRing: true },
   ],
   'black-hole': [
-    { radius: 1.86, tiltX: 1.34, spinY: 0.45, speed: 0.72, phase: 1.2, reverse: false, variant: 'frigate' },
-    { radius: 2.38, tiltX: 0.66, spinY: 1.22, speed: 0.68, phase: 2.95, reverse: true, variant: 'probe' },
-    { radius: 2.84, tiltX: 1.07, spinY: 2.05, speed: 0.64, phase: 4.4, reverse: false, variant: 'hauler' },
+    { radius: 3.48, size: 0.19, tiltX: 1.28, spinY: 0.22, speed: 0.2, phase: 0.6, base: '#1f2937', secondary: '#111827', roughness: 0.82, metallic: 0.06 },
+    { radius: 3.98, size: 0.13, tiltX: 0.9, spinY: 1.05, speed: 0.17, phase: 2.8, base: '#f97316', secondary: '#7c2d12', roughness: 0.58, metallic: 0.2 },
+    { radius: 4.42, size: 0.11, tiltX: 1.4, spinY: 2.26, speed: 0.15, phase: 4.7, base: '#facc15', secondary: '#92400e', roughness: 0.56, metallic: 0.18 },
   ],
   'ice-world': [
-    { radius: 1.84, tiltX: 0.86, spinY: 0.26, speed: 0.39, phase: 0.6, reverse: false, variant: 'ring' },
-    { radius: 2.35, tiltX: 1.19, spinY: 1.12, speed: 0.52, phase: 2.6, reverse: false, variant: 'drone' },
-    { radius: 2.8, tiltX: 0.7, spinY: 1.76, speed: 0.45, phase: 3.9, reverse: true, variant: 'frigate' },
+    { radius: 3.52, size: 0.2, tiltX: 0.72, spinY: 0.38, speed: 0.14, phase: 1.1, base: '#dbeafe', secondary: '#93c5fd', roughness: 0.78, metallic: 0.09 },
+    { radius: 4.1, size: 0.15, tiltX: 1.24, spinY: 1.55, speed: 0.11, phase: 3.4, base: '#a5f3fc', secondary: '#0ea5e9', roughness: 0.69, metallic: 0.14, hasRing: true },
   ],
   'ancient-ruins': [
-    { radius: 1.94, tiltX: 1.1, spinY: 0.1, speed: 0.41, phase: 0.35, reverse: false, variant: 'hauler' },
-    { radius: 2.48, tiltX: 0.72, spinY: 0.94, speed: 0.54, phase: 2.35, reverse: true, variant: 'probe' },
-    { radius: 2.98, tiltX: 1.29, spinY: 1.86, speed: 0.36, phase: 4.25, reverse: false, variant: 'drone' },
+    { radius: 3.58, size: 0.22, tiltX: 1.02, spinY: 0.27, speed: 0.13, phase: 0.2, base: '#d6d3d1', secondary: '#57534e', roughness: 0.88, metallic: 0.06 },
+    { radius: 4.18, size: 0.17, tiltX: 0.74, spinY: 1.35, speed: 0.1, phase: 2.6, base: '#84cc16', secondary: '#14532d', roughness: 0.66, metallic: 0.1 },
   ],
 }
 
@@ -320,125 +334,130 @@ function makeCityLights(scene: Scene, seed: number) {
   return texture
 }
 
-type OrbitProfileMeta = OrbitLayout & {
+type OrbitProfileMeta = ShipOrbitLayout & {
+  id: string
+  variant: ShipVariant
+}
+
+type MoonProfileMeta = MoonLayout & {
   id: string
 }
 
-function createSatelliteModel(
+function makeMoonAlbedo(scene: Scene, seed: number, base: string, secondary: string) {
+  const texture = new DynamicTexture(`moon-albedo-${seed}`, { width: 512, height: 256 }, scene, false)
+  const ctx = texture.getContext() as unknown as CanvasRenderingContext2D
+  const g = ctx.createLinearGradient(0, 0, 512, 256)
+  g.addColorStop(0, base)
+  g.addColorStop(1, secondary)
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 512, 256)
+  const rand = (n: number) => {
+    const x = Math.sin(seed * 613 + n * 37) * 10000
+    return x - Math.floor(x)
+  }
+  for (let i = 0; i < 20; i += 1) {
+    const x = rand(i + 1) * 512
+    const y = rand(i + 11) * 256
+    const r = 8 + rand(i + 23) * 26
+    const blob = ctx.createRadialGradient(x, y, 0, x, y, r)
+    blob.addColorStop(0, '#ffffff33')
+    blob.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = blob
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  texture.update(false)
+  return texture
+}
+
+function createShipModel(
   scene: Scene,
-  sat: TransformNode,
-  variant: SatelliteVariant,
+  shipNode: TransformNode,
+  variant: ShipVariant,
   id: string,
-  theme: Theme,
-  index: number,
+  shipIndex: number,
 ) {
-  if (variant === 'frigate') {
-    const body = MeshBuilder.CreateCylinder(`sat-body-${id}`, { height: 0.28, diameterTop: 0.045, diameterBottom: 0.09, tessellation: 12 }, scene)
-    body.parent = sat
+  if (variant === 'interceptor') {
+    const body = MeshBuilder.CreateCylinder(`ship-body-${id}`, { height: 0.32, diameterTop: 0.04, diameterBottom: 0.075, tessellation: 16 }, scene)
+    body.parent = shipNode
     body.rotation.x = Math.PI * 0.5
-    const bodyMat = new PBRMaterial(`sat-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#cbd5e1')
-    bodyMat.metallic = 0.94
-    bodyMat.roughness = 0.16
+    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
+    bodyMat.albedoColor = Color3.FromHexString('#e2e8f0')
+    bodyMat.metallic = 0.96
+    bodyMat.roughness = 0.14
     body.material = bodyMat
 
-    const wingL = MeshBuilder.CreateBox(`sat-wing-l-${id}`, { width: 0.16, height: 0.012, depth: 0.07 }, scene)
-    wingL.parent = sat
-    wingL.position.x = -0.12
-    wingL.position.z = 0.02
-    wingL.rotation.z = 0.16
-    const wingR = wingL.clone(`sat-wing-r-${id}`)
-    wingR.parent = sat
+    const wingL = MeshBuilder.CreateBox(`ship-wing-l-${id}`, { width: 0.2, height: 0.01, depth: 0.08 }, scene)
+    wingL.parent = shipNode
+    wingL.position.x = -0.13
+    wingL.position.z = 0.01
+    wingL.rotation.z = 0.18
+    const wingR = wingL.clone(`ship-wing-r-${id}`)
+    wingR.parent = shipNode
     wingR.position.x = 0.12
     wingR.rotation.z = -0.16
-  } else if (variant === 'ring') {
-    const body = MeshBuilder.CreateSphere(`sat-body-${id}`, { diameter: 0.14, segments: 10 }, scene)
-    body.parent = sat
-    const bodyMat = new PBRMaterial(`sat-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#dbeafe')
-    bodyMat.metallic = 0.84
-    bodyMat.roughness = 0.24
+  } else if (variant === 'carrier') {
+    const body = MeshBuilder.CreateBox(`ship-body-${id}`, { width: 0.26, height: 0.1, depth: 0.2 }, scene)
+    body.parent = shipNode
+    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
+    bodyMat.albedoColor = Color3.FromHexString('#94a3b8')
+    bodyMat.metallic = 0.85
+    bodyMat.roughness = 0.3
     body.material = bodyMat
 
-    const ring = MeshBuilder.CreateTorus(`sat-ring-${id}`, { diameter: 0.3, thickness: 0.016, tessellation: 36 }, scene)
-    ring.parent = sat
-    ring.rotation.x = Math.PI * 0.5
-    const ringMat = new StandardMaterial(`sat-ring-mat-${id}`, scene)
-    ringMat.emissiveColor = Color3.FromHexString(theme.ring).scale(0.68)
-    ringMat.alpha = 0.86
-    ring.material = ringMat
-  } else if (variant === 'probe') {
-    const body = MeshBuilder.CreatePolyhedron(`sat-body-${id}`, { type: 1, size: 0.12 }, scene)
-    body.parent = sat
-    const bodyMat = new PBRMaterial(`sat-body-mat-${id}`, scene)
+    const cargo = MeshBuilder.CreateBox(`ship-cargo-${id}`, { width: 0.1, height: 0.07, depth: 0.09 }, scene)
+    cargo.parent = shipNode
+    cargo.position.y = 0.085
+    cargo.position.z = -0.01
+    const cargoMat = new StandardMaterial(`ship-cargo-mat-${id}`, scene)
+    cargoMat.diffuseColor = Color3.FromHexString('#475569')
+    cargoMat.emissiveColor = Color3.FromHexString('#0ea5e9').scale(0.22)
+    cargo.material = cargoMat
+
+    const sideL = MeshBuilder.CreateBox(`ship-side-l-${id}`, { width: 0.04, height: 0.06, depth: 0.16 }, scene)
+    sideL.parent = shipNode
+    sideL.position.x = -0.14
+    const sideR = sideL.clone(`ship-side-r-${id}`)
+    sideR.parent = shipNode
+    sideR.position.x = 0.14
+  } else {
+    const body = MeshBuilder.CreatePolyhedron(`ship-body-${id}`, { type: 1, size: 0.135 }, scene)
+    body.parent = shipNode
+    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
     bodyMat.albedoColor = Color3.FromHexString('#f1f5f9')
-    bodyMat.metallic = 0.91
-    bodyMat.roughness = 0.21
+    bodyMat.metallic = 0.93
+    bodyMat.roughness = 0.18
     body.material = bodyMat
 
     for (let a = 0; a < 3; a += 1) {
       const theta = (a / 3) * Math.PI * 2
-      const fin = MeshBuilder.CreateBox(`sat-fin-${id}-${a}`, { width: 0.12, height: 0.014, depth: 0.035 }, scene)
-      fin.parent = sat
+      const fin = MeshBuilder.CreateBox(`ship-fin-${id}-${a}`, { width: 0.13, height: 0.014, depth: 0.04 }, scene)
+      fin.parent = shipNode
       fin.position.x = Math.cos(theta) * 0.13
       fin.position.y = Math.sin(theta) * 0.13
       fin.rotation.z = theta
     }
-  } else if (variant === 'hauler') {
-    const body = MeshBuilder.CreateBox(`sat-body-${id}`, { width: 0.22, height: 0.09, depth: 0.16 }, scene)
-    body.parent = sat
-    const bodyMat = new PBRMaterial(`sat-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#94a3b8')
-    bodyMat.metallic = 0.86
-    bodyMat.roughness = 0.28
-    body.material = bodyMat
-
-    const cargo = MeshBuilder.CreateBox(`sat-cargo-${id}`, { width: 0.09, height: 0.06, depth: 0.08 }, scene)
-    cargo.parent = sat
-    cargo.position.y = 0.08
-    cargo.position.z = -0.03
-    const cargoMat = new StandardMaterial(`sat-cargo-mat-${id}`, scene)
-    cargoMat.diffuseColor = Color3.FromHexString('#475569')
-    cargoMat.emissiveColor = Color3.FromHexString('#0ea5e9').scale(0.24)
-    cargo.material = cargoMat
-  } else {
-    const body = MeshBuilder.CreateBox(`sat-body-${id}`, { width: 0.18, height: 0.08, depth: 0.15 }, scene)
-    body.parent = sat
-    const bodyMat = new PBRMaterial(`sat-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#cbd5e1')
-    bodyMat.metallic = 0.92
-    bodyMat.roughness = 0.2
-    body.material = bodyMat
-
-    const armL = MeshBuilder.CreateBox(`sat-arm-l-${id}`, { width: 0.12, height: 0.018, depth: 0.05 }, scene)
-    armL.parent = sat
-    armL.position.x = -0.14
-    armL.position.y = -0.01
-    armL.rotation.z = 0.2
-    const armR = armL.clone(`sat-arm-r-${id}`)
-    armR.parent = sat
-    armR.position.x = 0.14
-    armR.rotation.z = -0.2
   }
 
-  const cockpit = MeshBuilder.CreateSphere(`sat-cockpit-${id}`, { diameter: 0.045, segments: 10 }, scene)
-  cockpit.parent = sat
+  const cockpit = MeshBuilder.CreateSphere(`ship-cockpit-${id}`, { diameter: 0.045, segments: 10 }, scene)
+  cockpit.parent = shipNode
   cockpit.position.set(0, 0.03, 0.05)
-  const cockpitMat = new StandardMaterial(`sat-cockpit-mat-${id}`, scene)
-  cockpitMat.emissiveColor = Color3.FromHexString(index % 2 === 0 ? '#7dd3fc' : '#fbbf24').scale(0.72)
+  const cockpitMat = new StandardMaterial(`ship-cockpit-mat-${id}`, scene)
+  cockpitMat.emissiveColor = Color3.FromHexString(shipIndex % 2 === 0 ? '#7dd3fc' : '#fbbf24').scale(0.72)
   cockpitMat.alpha = 0.86
   cockpit.material = cockpitMat
 
   const engineFlame = MeshBuilder.CreateCylinder(
-    `sat-flame-${id}`,
+    `ship-flame-${id}`,
     { diameterTop: 0.012, diameterBottom: 0.055, height: 0.26, tessellation: 10 },
     scene,
   )
-  engineFlame.parent = sat
+  engineFlame.parent = shipNode
   engineFlame.position.z = -0.18
   engineFlame.rotation.x = Math.PI * 0.5
-  const flameMat = new StandardMaterial(`sat-flame-mat-${id}`, scene)
-  flameMat.emissiveColor = Color3.FromHexString(index === 2 ? '#f97316' : '#22d3ee')
+  const flameMat = new StandardMaterial(`ship-flame-mat-${id}`, scene)
+  flameMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#f97316' : '#22d3ee')
   flameMat.alpha = 0.74
   flameMat.disableLighting = true
   engineFlame.material = flameMat
@@ -581,15 +600,17 @@ export function PlanetSceneBabylon({
     auraMat.backFaceCulling = false
     aura.material = auraMat
 
-    // Orbit lines and satellites
-    const satelliteNodes: TransformNode[] = []
+    // Ships orbit around planets and are shared across all planets.
+    const shipNodes: TransformNode[] = []
+    const moonNodes: TransformNode[] = []
     const orbitScale = isMobileViewport ? 0.82 : 1
-    const orbitLayouts = PLANET_ORBIT_LAYOUTS[planetId] ?? PLANET_ORBIT_LAYOUTS['earth-like']
+    const shipVariants: ShipVariant[] = ['interceptor', 'carrier', 'explorer']
     const orbitProfiles: OrbitProfileMeta[] = ships.map((ship, index) => {
-      const layout = orbitLayouts[index % orbitLayouts.length]
+      const layout = SHIP_ORBIT_LAYOUTS[index % SHIP_ORBIT_LAYOUTS.length]
       return {
         ...layout,
         id: `${ship.id}-${index}`,
+        variant: shipVariants[index % shipVariants.length],
         radius: layout.radius * orbitScale,
         speed: layout.speed * (0.9 + Math.min(0.2, ship.level * 0.02)),
         phase: layout.phase + ship.level * 0.07,
@@ -613,12 +634,49 @@ export function PlanetSceneBabylon({
       orbitMat.alpha = 0.58
       orbit.material = orbitMat
 
-      const sat = new TransformNode(`sat-${profile.id}-${index}`, scene)
-      sat.rotationQuaternion = null
-      createSatelliteModel(scene, sat, profile.variant, profile.id, theme, index)
+      const shipNode = new TransformNode(`ship-${profile.id}-${index}`, scene)
+      shipNode.rotationQuaternion = null
+      createShipModel(scene, shipNode, profile.variant, profile.id, index)
 
-      satelliteNodes.push(sat)
-      sat.metadata = profile
+      shipNodes.push(shipNode)
+      shipNode.metadata = profile
+    })
+
+    // Per-planet moons: unique size, color, texture and orbital placement.
+    const moonLayouts = PLANET_MOON_LAYOUTS[planetId] ?? PLANET_MOON_LAYOUTS['earth-like']
+    moonLayouts.forEach((layout, index) => {
+      const moonProfile: MoonProfileMeta = { ...layout, id: `moon-${planetId}-${index}` }
+      const moonPivot = new TransformNode(`moon-pivot-${moonProfile.id}`, scene)
+      const moon = MeshBuilder.CreateSphere(
+        `moon-body-${moonProfile.id}`,
+        { diameter: moonProfile.size * 2, segments: forceLow ? 18 : 28 },
+        scene,
+      )
+      moon.parent = moonPivot
+      const moonMat = new PBRMaterial(`moon-mat-${moonProfile.id}`, scene)
+      moonMat.albedoColor = Color3.FromHexString(moonProfile.base)
+      moonMat.albedoTexture = makeMoonAlbedo(scene, planetSeed + index * 37, moonProfile.base, moonProfile.secondary)
+      moonMat.roughness = moonProfile.roughness
+      moonMat.metallic = moonProfile.metallic
+      moonMat.environmentIntensity = 0.75
+      moon.material = moonMat
+
+      if (moonProfile.hasRing) {
+        const moonRing = MeshBuilder.CreateTorus(
+          `moon-ring-${moonProfile.id}`,
+          { diameter: moonProfile.size * 3.2, thickness: moonProfile.size * 0.08, tessellation: 48 },
+          scene,
+        )
+        moonRing.parent = moonPivot
+        moonRing.rotation.x = Math.PI * 0.5
+        const ringMat = new StandardMaterial(`moon-ring-mat-${moonProfile.id}`, scene)
+        ringMat.emissiveColor = Color3.FromHexString(moonProfile.secondary).scale(0.6)
+        ringMat.alpha = 0.55
+        moonRing.material = ringMat
+      }
+
+      moonNodes.push(moonPivot)
+      moonPivot.metadata = moonProfile
     })
 
     // Static stars without twinkling
@@ -685,8 +743,8 @@ export function PlanetSceneBabylon({
       planetMat.emissiveColor = Color3.FromHexString(theme.ring).scale(0.08 + tapGlowRef.current * 0.2)
       auraMat.alpha = (auraActive ? 0.14 : 0.05) + tapGlowRef.current * 0.12
 
-      for (const sat of satelliteNodes) {
-        const profile = sat.metadata as OrbitProfileMeta
+      for (const shipNode of shipNodes) {
+        const profile = shipNode.metadata as OrbitProfileMeta
         const radius = profile.radius
         const phase = profile.phase
         const speed = profile.speed
@@ -700,16 +758,26 @@ export function PlanetSceneBabylon({
         const orbitMatrix = Matrix.RotationYawPitchRoll(spinY, tiltX, 0)
         const worldPos = Vector3.TransformCoordinates(local, orbitMatrix)
         const worldTan = Vector3.TransformNormal(localTangent, orbitMatrix).normalize()
-        sat.position.copyFrom(worldPos)
+        shipNode.position.copyFrom(worldPos)
         const flatTan = new Vector3(worldTan.x, 0, worldTan.z)
         if (flatTan.lengthSquared() < 0.000001) {
           flatTan.copyFromFloats(worldTan.x, 0, 1)
         } else {
           flatTan.normalize()
         }
-        sat.rotation.y = Math.atan2(flatTan.x, flatTan.z)
-        sat.rotation.x = 0
-        sat.rotation.z = 0
+        shipNode.rotation.y = Math.atan2(flatTan.x, flatTan.z)
+        shipNode.rotation.x = 0
+        shipNode.rotation.z = 0
+      }
+
+      for (const moonPivot of moonNodes) {
+        const moon = moonPivot.metadata as MoonProfileMeta
+        const angle = t * moon.speed + moon.phase
+        const local = new Vector3(Math.cos(angle) * moon.radius, 0, Math.sin(angle) * moon.radius)
+        const orbitMatrix = Matrix.RotationYawPitchRoll(moon.spinY, moon.tiltX, 0)
+        const worldPos = Vector3.TransformCoordinates(local, orbitMatrix)
+        moonPivot.position.copyFrom(worldPos)
+        moonPivot.rotation.y += dt * 0.26
       }
     })
 
