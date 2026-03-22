@@ -136,6 +136,7 @@ export function PlanetMap({
                 planetId={activePlanet.id}
                 ships={ships}
                 auraActive={auraActive}
+                isTapBurst={isTapBurst}
                 pointerRef={cameraTargetRef}
                 lastInputAtRef={lastInputAtRef}
                 reducedMotion={reducedMotion}
@@ -145,7 +146,7 @@ export function PlanetMap({
 
           <div
             ref={planetRef}
-            className={`planet-hit-surface ${isTapBurst ? 'tap-burst' : ''} ${
+            className={`planet-hit-surface ${
               planetTransition ? 'planet-transition' : ''
             } ${auraActive ? 'artifact-aura' : ''}`}
             onClick={(event) => onTap(event.clientX, event.clientY)}
