@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+body {
+  background: #020617;
+}
+
+.space-bg {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(34, 211, 238, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 72%, rgba(147, 51, 234, 0.25), transparent 40%),
+    radial-gradient(circle at 48% 58%, rgba(30, 64, 175, 0.35), transparent 56%),
+    linear-gradient(180deg, #020617 0%, #020d1e 46%, #050b16 100%);
+}
+
+.space-bg::before,
+.space-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.space-bg::before {
+  background-image:
+    radial-gradient(2px 2px at 8% 12%, rgba(255, 255, 255, 0.9), transparent 55%),
+    radial-gradient(1.5px 1.5px at 18% 75%, rgba(255, 255, 255, 0.8), transparent 55%),
+    radial-gradient(2px 2px at 28% 44%, rgba(255, 255, 255, 0.75), transparent 55%),
+    radial-gradient(1.7px 1.7px at 42% 18%, rgba(255, 255, 255, 0.9), transparent 55%),
+    radial-gradient(1.7px 1.7px at 54% 67%, rgba(255, 255, 255, 0.95), transparent 55%),
+    radial-gradient(2px 2px at 69% 35%, rgba(255, 255, 255, 0.85), transparent 55%),
+    radial-gradient(1.7px 1.7px at 82% 14%, rgba(255, 255, 255, 0.9), transparent 55%),
+    radial-gradient(1.9px 1.9px at 90% 58%, rgba(255, 255, 255, 0.8), transparent 55%);
+  opacity: 0.85;
+}
+
+.space-bg::after {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.12), transparent 68%),
+    radial-gradient(circle at 18% 80%, rgba(14, 165, 233, 0.16), transparent 35%);
+  mix-blend-mode: screen;
+}
+
+.galaxor-glow {
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.85),
+    0 0 24px rgba(125, 211, 252, 0.8),
+    0 0 48px rgba(37, 99, 235, 0.65);
+}
