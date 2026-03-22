@@ -15,28 +15,30 @@ function App() {
   const [username, setUsername] = useState<string | null>(null)
 
   useEffect(() => {
-    // Базовая инициализация Telegram Mini Apps SDK.
-    init()
-
     const cleanupHandlers: VoidFunction[] = []
 
-    miniApp.mount.ifAvailable()
-    miniApp.ready.ifAvailable()
-    viewport.mount.ifAvailable()
-    viewport.expand.ifAvailable()
-    viewport.requestFullscreen.ifAvailable()
-
-    const miniAppCss = miniApp.bindCssVars.ifAvailable()
-    if (miniAppCss.ok) cleanupHandlers.push(miniAppCss.data)
-
-    const viewportCss = viewport.bindCssVars.ifAvailable()
-    if (viewportCss.ok) cleanupHandlers.push(viewportCss.data)
-
     try {
+      // Вне Telegram (например localhost) SDK может бросать исключение.
+      // В этом случае оставляем обычный веб-режим без Telegram API.
+      init()
+
+      miniApp.mount.ifAvailable()
+      miniApp.ready.ifAvailable()
+      viewport.mount.ifAvailable()
+      viewport.expand.ifAvailable()
+      viewport.requestFullscreen.ifAvailable()
+
+      const miniAppCss = miniApp.bindCssVars.ifAvailable()
+      if (miniAppCss.ok) cleanupHandlers.push(miniAppCss.data)
+
+      const viewportCss = viewport.bindCssVars.ifAvailable()
+      if (viewportCss.ok) cleanupHandlers.push(viewportCss.data)
+
       // Получаем initData и показываем username, если Telegram его прислал.
       const launchParams = retrieveLaunchParams()
       setUsername(launchParams.tgWebAppData?.user?.username ?? null)
     } catch {
+      // Fallback для запуска в браузере без Telegram-контекста.
       setUsername(null)
     }
 
