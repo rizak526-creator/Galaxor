@@ -75,7 +75,7 @@ const THEMES: Record<string, Theme> = {
   },
 }
 
-function createPlanetTexture(theme: Theme): THREE.CanvasTexture {
+function createPlanetTexture(planetId: string, theme: Theme): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
   canvas.width = 1024
   canvas.height = 512
@@ -101,7 +101,7 @@ function createPlanetTexture(theme: Theme): THREE.CanvasTexture {
   }
   const emissive = hexToRgb(theme.emissive)
 
-  for (let i = 0; i < 36; i += 1) {
+  for (let i = 0; i < 26; i += 1) {
     const x = Math.random() * canvas.width
     const y = Math.random() * canvas.height
     const radius = 34 + Math.random() * 110
@@ -116,6 +116,85 @@ function createPlanetTexture(theme: Theme): THREE.CanvasTexture {
     ctx.beginPath()
     ctx.arc(x, y, radius, 0, Math.PI * 2)
     ctx.fill()
+  }
+
+  if (planetId === 'gas-giant') {
+    ctx.globalAlpha = 0.28
+    for (let i = 0; i < 18; i += 1) {
+      const y = (i / 18) * canvas.height
+      ctx.fillStyle = i % 2 === 0 ? '#fcd34d' : '#fb923c'
+      ctx.fillRect(0, y, canvas.width, 16 + Math.sin(i) * 8)
+    }
+    ctx.globalAlpha = 1
+  }
+
+  if (planetId === 'earth-like') {
+    ctx.globalAlpha = 0.35
+    ctx.fillStyle = '#16a34a'
+    for (let i = 0; i < 10; i += 1) {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      ctx.beginPath()
+      ctx.ellipse(x, y, 70 + Math.random() * 60, 30 + Math.random() * 24, Math.random() * Math.PI, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+  }
+
+  if (planetId === 'ice-world') {
+    ctx.globalAlpha = 0.3
+    ctx.strokeStyle = '#e0f2fe'
+    ctx.lineWidth = 3
+    for (let i = 0; i < 26; i += 1) {
+      const y = Math.random() * canvas.height
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(canvas.width, y + Math.random() * 22 - 11)
+      ctx.stroke()
+    }
+    ctx.globalAlpha = 1
+  }
+
+  if (planetId === 'ancient-ruins') {
+    ctx.globalAlpha = 0.22
+    ctx.strokeStyle = '#fef08a'
+    ctx.lineWidth = 2
+    for (let i = 0; i < 18; i += 1) {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      ctx.strokeRect(x, y, 24 + Math.random() * 36, 12 + Math.random() * 16)
+    }
+    ctx.globalAlpha = 1
+  }
+
+  if (planetId === 'nebula') {
+    ctx.globalAlpha = 0.32
+    for (let i = 0; i < 22; i += 1) {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      const r = 30 + Math.random() * 90
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+      g.addColorStop(0, i % 2 === 0 ? '#f0abfc' : '#c084fc')
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+  }
+
+  if (planetId === 'black-hole') {
+    const hole = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 18, canvas.width / 2, canvas.height / 2, 120)
+    hole.addColorStop(0, '#020617')
+    hole.addColorStop(0.45, '#030712')
+    hole.addColorStop(0.55, '#f59e0b')
+    hole.addColorStop(0.72, '#fb923c')
+    hole.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.globalAlpha = 0.58
+    ctx.fillStyle = hole
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.globalAlpha = 1
   }
 
   const texture = new THREE.CanvasTexture(canvas)
@@ -139,7 +218,7 @@ function SceneContent({
   const satelliteRefs = useRef<Array<THREE.Group | null>>([])
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
   const theme = THEMES[planetId] ?? THEMES['earth-like']
-  const surfaceMap = useMemo(() => createPlanetTexture(theme), [theme])
+  const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
   const shipIconUrls = useMemo(() => ships.map((ship) => ship.icon), [ships])
   const shipTextures = useLoader(THREE.TextureLoader, shipIconUrls)
 
@@ -154,9 +233,9 @@ function SceneContent({
     () =>
       ships.map((ship, index) => ({
         id: ship.id,
-        radius: 2.75 + index * 0.5,
+        radius: 2.15 + index * 0.33,
         speed: 0.42 + index * 0.14,
-        tiltX: 0.52 + index * 0.36,
+        tiltX: 0.45 + index * 0.3,
         spinY: index * 0.92,
         phase: index * 2.2,
         bodyScale: 1 + Math.min(ship.level, 30) * 0.012,
@@ -185,7 +264,7 @@ function SceneContent({
 
     state.camera.position.x = cameraSmoothingRef.current.x
     state.camera.position.y = cameraSmoothingRef.current.y
-    state.camera.position.z = 6.1
+    state.camera.position.z = 8.2
     state.camera.lookAt(0, 0, 0)
 
     const planetSpin = reducedMotion ? 0.01 : 0.12
@@ -218,7 +297,7 @@ function SceneContent({
       sat.position.set(x, y, z)
       sat.rotation.y = angle + Math.PI / 2
       sat.rotation.z = Math.sin(angle * 1.6) * 0.2
-      const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.72, 1.17)
+      const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.78, 1.14)
       sat.scale.setScalar(depth)
     }
   })
@@ -230,7 +309,7 @@ function SceneContent({
       <directionalLight position={[4.4, 3.8, 4.6]} intensity={1.25} color="#ffffff" />
       <directionalLight position={[-3.2, -2.6, -1.5]} intensity={0.2} color={theme.cloud} />
       <pointLight position={[-3.4, -2.2, 2.4]} intensity={0.7} color={theme.ring} />
-      <Stars radius={26} depth={40} count={reducedMotion ? 380 : 1100} factor={2.2} fade speed={0.32} />
+      <Stars radius={36} depth={62} count={reducedMotion ? 380 : 1300} factor={2.2} fade speed={0.32} />
       <Sparkles
         count={reducedMotion ? 10 : 30}
         size={2.3}
@@ -242,7 +321,7 @@ function SceneContent({
       <Environment preset="sunset" />
 
       <mesh ref={planetRef}>
-        <sphereGeometry args={[1.95, 96, 96]} />
+        <sphereGeometry args={[1.52, 96, 96]} />
         <meshPhysicalMaterial
           map={surfaceMap}
           color={theme.base}
@@ -258,7 +337,7 @@ function SceneContent({
       </mesh>
 
       <mesh rotation={[0, 0, -0.2]}>
-        <sphereGeometry args={[1.96, 64, 64]} />
+        <sphereGeometry args={[1.53, 64, 64]} />
         <meshStandardMaterial
           color={theme.cloud}
           transparent
@@ -268,8 +347,8 @@ function SceneContent({
         />
       </mesh>
 
-      <mesh ref={cloudsRef} scale={1.045}>
-        <sphereGeometry args={[1.95, 64, 64]} />
+      <mesh ref={cloudsRef} scale={1.055}>
+        <sphereGeometry args={[1.52, 64, 64]} />
         <meshStandardMaterial
           color={theme.cloud}
           transparent
@@ -280,8 +359,8 @@ function SceneContent({
         />
       </mesh>
 
-      <mesh scale={1.13}>
-        <sphereGeometry args={[1.95, 48, 48]} />
+      <mesh scale={1.2}>
+        <sphereGeometry args={[1.52, 48, 48]} />
         <meshBasicMaterial
           color={theme.ring}
           transparent
@@ -292,8 +371,8 @@ function SceneContent({
       </mesh>
 
       {auraActive && (
-        <mesh ref={auraRef} scale={1.22}>
-          <sphereGeometry args={[1.95, 30, 30]} />
+        <mesh ref={auraRef} scale={1.32}>
+          <sphereGeometry args={[1.52, 30, 30]} />
           <meshBasicMaterial
             color="#fde047"
             transparent
@@ -311,6 +390,56 @@ function SceneContent({
           </mesh>
         </group>
       ))}
+
+      {planetId === 'gas-giant' && (
+        <mesh rotation={[Math.PI / 2.5, 0.2, 0]}>
+          <torusGeometry args={[2.06, 0.075, 18, 140]} />
+          <meshStandardMaterial color="#fdba74" transparent opacity={0.42} roughness={0.5} metalness={0.18} />
+        </mesh>
+      )}
+
+      {planetId === 'black-hole' && (
+        <group>
+          <mesh>
+            <sphereGeometry args={[0.56, 40, 40]} />
+            <meshBasicMaterial color="#020617" />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0.3, 0]}>
+            <torusGeometry args={[1.42, 0.22, 20, 180]} />
+            <meshBasicMaterial color="#fb923c" transparent opacity={0.28} blending={THREE.AdditiveBlending} />
+          </mesh>
+        </group>
+      )}
+
+      {planetId === 'ice-world' && (
+        <group>
+          {[0, 1, 2, 3].map((i) => (
+            <mesh key={`ice-spire-${i}`} position={[Math.cos(i * 1.7) * 1.28, 0.2 + (i % 2) * 0.2, Math.sin(i * 1.7) * 1.28]} rotation={[0.3, i * 1.4, 0]}>
+              <coneGeometry args={[0.07, 0.28, 6]} />
+              <meshStandardMaterial color="#dbeafe" emissive="#93c5fd" emissiveIntensity={0.2} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {planetId === 'ancient-ruins' && (
+        <group>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.68, 0.03, 12, 120]} />
+            <meshStandardMaterial color="#fde68a" transparent opacity={0.28} />
+          </mesh>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <mesh key={`ruin-${i}`} position={[Math.cos(i * 1.2) * 1.62, 0.02, Math.sin(i * 1.2) * 1.62]}>
+              <boxGeometry args={[0.06, 0.13 + (i % 2) * 0.05, 0.06]} />
+              <meshStandardMaterial color="#fcd34d" metalness={0.35} roughness={0.65} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {planetId === 'nebula' && (
+        <Sparkles count={24} size={3.2} speed={0.12} scale={[4.4, 4.4, 4.4]} color="#f0abfc" opacity={0.28} />
+      )}
 
       {orbitParams.map((orbit, index) => (
         <group key={`sat-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
@@ -366,7 +495,7 @@ function SceneContent({
 export function PlanetScene3D(props: PlanetScene3DProps) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 6.4], fov: 42 }}
+      camera={{ position: [0, 0, 8.2], fov: 40 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
       className="planet-canvas"
