@@ -378,89 +378,136 @@ function createShipModel(
   id: string,
   shipIndex: number,
 ) {
-  if (variant === 'interceptor') {
-    const body = MeshBuilder.CreateCylinder(`ship-body-${id}`, { height: 0.32, diameterTop: 0.04, diameterBottom: 0.075, tessellation: 16 }, scene)
-    body.parent = shipNode
-    body.rotation.x = Math.PI * 0.5
-    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#e2e8f0')
-    bodyMat.metallic = 0.96
-    bodyMat.roughness = 0.14
-    body.material = bodyMat
+  const hullMat = new PBRMaterial(`ship-hull-mat-${id}`, scene)
+  hullMat.albedoColor =
+    variant === 'carrier'
+      ? Color3.FromHexString('#cbd5e1')
+      : variant === 'explorer'
+        ? Color3.FromHexString('#e2e8f0')
+        : Color3.FromHexString('#f1f5f9')
+  hullMat.metallic = 0.93
+  hullMat.roughness = variant === 'carrier' ? 0.25 : 0.18
 
-    const wingL = MeshBuilder.CreateBox(`ship-wing-l-${id}`, { width: 0.2, height: 0.01, depth: 0.08 }, scene)
-    wingL.parent = shipNode
-    wingL.position.x = -0.13
-    wingL.position.z = 0.01
-    wingL.rotation.z = 0.18
-    const wingR = wingL.clone(`ship-wing-r-${id}`)
-    wingR.parent = shipNode
-    wingR.position.x = 0.12
-    wingR.rotation.z = -0.16
-  } else if (variant === 'carrier') {
-    const body = MeshBuilder.CreateBox(`ship-body-${id}`, { width: 0.26, height: 0.1, depth: 0.2 }, scene)
-    body.parent = shipNode
-    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#94a3b8')
-    bodyMat.metallic = 0.85
-    bodyMat.roughness = 0.3
-    body.material = bodyMat
+  const darkHullMat = new PBRMaterial(`ship-dark-mat-${id}`, scene)
+  darkHullMat.albedoColor = Color3.FromHexString('#475569')
+  darkHullMat.metallic = 0.7
+  darkHullMat.roughness = 0.35
 
-    const cargo = MeshBuilder.CreateBox(`ship-cargo-${id}`, { width: 0.1, height: 0.07, depth: 0.09 }, scene)
-    cargo.parent = shipNode
-    cargo.position.y = 0.085
-    cargo.position.z = -0.01
-    const cargoMat = new StandardMaterial(`ship-cargo-mat-${id}`, scene)
-    cargoMat.diffuseColor = Color3.FromHexString('#475569')
-    cargoMat.emissiveColor = Color3.FromHexString('#0ea5e9').scale(0.22)
-    cargo.material = cargoMat
+  const wingMat = new PBRMaterial(`ship-wing-mat-${id}`, scene)
+  wingMat.albedoColor = Color3.FromHexString('#cbd5e1')
+  wingMat.metallic = 0.86
+  wingMat.roughness = 0.22
 
-    const sideL = MeshBuilder.CreateBox(`ship-side-l-${id}`, { width: 0.04, height: 0.06, depth: 0.16 }, scene)
-    sideL.parent = shipNode
-    sideL.position.x = -0.14
-    const sideR = sideL.clone(`ship-side-r-${id}`)
-    sideR.parent = shipNode
-    sideR.position.x = 0.14
-  } else {
-    const body = MeshBuilder.CreatePolyhedron(`ship-body-${id}`, { type: 1, size: 0.135 }, scene)
-    body.parent = shipNode
-    const bodyMat = new PBRMaterial(`ship-body-mat-${id}`, scene)
-    bodyMat.albedoColor = Color3.FromHexString('#f1f5f9')
-    bodyMat.metallic = 0.93
-    bodyMat.roughness = 0.18
-    body.material = bodyMat
+  const fuselage = MeshBuilder.CreateCylinder(
+    `ship-fuselage-${id}`,
+    { height: variant === 'carrier' ? 0.36 : 0.3, diameterTop: 0.06, diameterBottom: 0.09, tessellation: 18 },
+    scene,
+  )
+  fuselage.parent = shipNode
+  fuselage.rotation.x = Math.PI * 0.5
+  fuselage.material = hullMat
 
-    for (let a = 0; a < 3; a += 1) {
-      const theta = (a / 3) * Math.PI * 2
-      const fin = MeshBuilder.CreateBox(`ship-fin-${id}-${a}`, { width: 0.13, height: 0.014, depth: 0.04 }, scene)
-      fin.parent = shipNode
-      fin.position.x = Math.cos(theta) * 0.13
-      fin.position.y = Math.sin(theta) * 0.13
-      fin.rotation.z = theta
-    }
+  const nose = MeshBuilder.CreateSphere(`ship-nose-${id}`, { diameter: 0.09, segments: 12 }, scene)
+  nose.parent = shipNode
+  nose.position.z = 0.18
+  nose.scaling.set(0.72, 0.62, 1.25)
+  nose.material = hullMat
+
+  const cabin = MeshBuilder.CreateBox(
+    `ship-cabin-${id}`,
+    { width: variant === 'carrier' ? 0.13 : 0.11, height: 0.055, depth: 0.11 },
+    scene,
+  )
+  cabin.parent = shipNode
+  cabin.position.y = 0.05
+  cabin.position.z = 0.03
+  cabin.material = darkHullMat
+
+  const wingSpan = variant === 'carrier' ? 0.19 : variant === 'explorer' ? 0.16 : 0.145
+  const wingSweep = variant === 'interceptor' ? 0.18 : 0.1
+  const wingDepth = variant === 'carrier' ? 0.14 : 0.11
+  const wingL = MeshBuilder.CreateBox(`ship-wing-l-${id}`, { width: wingSpan, height: 0.01, depth: wingDepth }, scene)
+  wingL.parent = shipNode
+  wingL.position.x = -0.12
+  wingL.position.z = -0.01
+  wingL.rotation.z = wingSweep
+  wingL.material = wingMat
+  const wingR = wingL.clone(`ship-wing-r-${id}`)
+  wingR.parent = shipNode
+  wingR.position.x = 0.12
+  wingR.rotation.z = -wingSweep
+
+  const tailFin = MeshBuilder.CreateBox(`ship-tail-fin-${id}`, { width: 0.016, height: 0.09, depth: 0.06 }, scene)
+  tailFin.parent = shipNode
+  tailFin.position.y = 0.06
+  tailFin.position.z = -0.11
+  tailFin.material = wingMat
+
+  const elevL = MeshBuilder.CreateBox(`ship-tail-l-${id}`, { width: 0.07, height: 0.01, depth: 0.05 }, scene)
+  elevL.parent = shipNode
+  elevL.position.x = -0.06
+  elevL.position.z = -0.12
+  elevL.rotation.z = 0.08
+  elevL.material = wingMat
+  const elevR = elevL.clone(`ship-tail-r-${id}`)
+  elevR.parent = shipNode
+  elevR.position.x = 0.06
+  elevR.rotation.z = -0.08
+
+  if (variant === 'carrier') {
+    const bay = MeshBuilder.CreateBox(`ship-bay-${id}`, { width: 0.12, height: 0.05, depth: 0.09 }, scene)
+    bay.parent = shipNode
+    bay.position.y = -0.045
+    bay.position.z = -0.02
+    bay.material = darkHullMat
+  } else if (variant === 'explorer') {
+    const sensor = MeshBuilder.CreateTorus(`ship-sensor-${id}`, { diameter: 0.09, thickness: 0.009, tessellation: 30 }, scene)
+    sensor.parent = shipNode
+    sensor.position.z = 0.09
+    sensor.rotation.x = Math.PI * 0.5
+    const sensorMat = new StandardMaterial(`ship-sensor-mat-${id}`, scene)
+    sensorMat.emissiveColor = Color3.FromHexString('#67e8f9').scale(0.7)
+    sensorMat.alpha = 0.86
+    sensor.material = sensorMat
   }
 
-  const cockpit = MeshBuilder.CreateSphere(`ship-cockpit-${id}`, { diameter: 0.045, segments: 10 }, scene)
+  const cockpit = MeshBuilder.CreateSphere(`ship-cockpit-${id}`, { diameter: 0.05, segments: 12 }, scene)
   cockpit.parent = shipNode
-  cockpit.position.set(0, 0.03, 0.05)
+  cockpit.position.set(0, 0.06, 0.12)
+  cockpit.scaling.set(0.72, 0.62, 1.12)
   const cockpitMat = new StandardMaterial(`ship-cockpit-mat-${id}`, scene)
   cockpitMat.emissiveColor = Color3.FromHexString(shipIndex % 2 === 0 ? '#7dd3fc' : '#fbbf24').scale(0.72)
   cockpitMat.alpha = 0.86
   cockpit.material = cockpitMat
 
-  const engineFlame = MeshBuilder.CreateCylinder(
-    `ship-flame-${id}`,
-    { diameterTop: 0.012, diameterBottom: 0.055, height: 0.26, tessellation: 10 },
-    scene,
-  )
-  engineFlame.parent = shipNode
-  engineFlame.position.z = -0.18
-  engineFlame.rotation.x = Math.PI * 0.5
-  const flameMat = new StandardMaterial(`ship-flame-mat-${id}`, scene)
-  flameMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#f97316' : '#22d3ee')
-  flameMat.alpha = 0.74
-  flameMat.disableLighting = true
-  engineFlame.material = flameMat
+  const enginePositions = [-0.04, 0.04]
+  enginePositions.forEach((xPos, idx) => {
+    const nozzle = MeshBuilder.CreateCylinder(
+      `ship-nozzle-${id}-${idx}`,
+      { diameterTop: 0.025, diameterBottom: 0.03, height: 0.04, tessellation: 10 },
+      scene,
+    )
+    nozzle.parent = shipNode
+    nozzle.position.x = xPos
+    nozzle.position.z = -0.15
+    nozzle.rotation.x = Math.PI * 0.5
+    nozzle.material = darkHullMat
+
+    const flame = MeshBuilder.CreateCylinder(
+      `ship-flame-${id}-${idx}`,
+      { diameterTop: 0.008, diameterBottom: 0.03, height: 0.2, tessellation: 10 },
+      scene,
+    )
+    flame.parent = shipNode
+    flame.position.x = xPos
+    flame.position.z = -0.24
+    flame.rotation.x = Math.PI * 0.5
+    const flameMat = new StandardMaterial(`ship-flame-mat-${id}-${idx}`, scene)
+    flameMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#f97316' : '#22d3ee')
+    flameMat.alpha = 0.74
+    flameMat.disableLighting = true
+    flame.material = flameMat
+  })
 }
 
 export function PlanetSceneBabylon({
