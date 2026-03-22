@@ -182,6 +182,16 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
     ctx.fill()
   }
 
+  // Fine grain adds geological structure and avoids flat color fields.
+  for (let i = 0; i < 1800; i += 1) {
+    const x = rand(i + 901) * 1024
+    const y = rand(i + 1211) * 512
+    const shade = rand(i + 1447) > 0.5 ? 255 : 0
+    const alpha = 0.025 + rand(i + 1663) * 0.05
+    ctx.fillStyle = `rgba(${shade},${shade},${shade},${alpha.toFixed(3)})`
+    ctx.fillRect(x, y, 1.6, 1.6)
+  }
+
   if (planetId === 'earth-like') {
     for (let i = 0; i < 11; i += 1) {
       const x = rand(i + 41) * 1024
@@ -200,6 +210,14 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
     ctx.beginPath()
     ctx.ellipse(490, 482, 430, 58, 0, 0, Math.PI * 2)
     ctx.fill()
+    for (let i = 0; i < 8; i += 1) {
+      ctx.strokeStyle = '#92400e66'
+      ctx.lineWidth = 3 + rand(i + 1880) * 4
+      ctx.beginPath()
+      ctx.moveTo(rand(i + 1921) * 1024, rand(i + 1977) * 512)
+      ctx.lineTo(rand(i + 2011) * 1024, rand(i + 2059) * 512)
+      ctx.stroke()
+    }
   } else if (planetId === 'gas-giant') {
     for (let y = 0; y < 512; y += 18) {
       const stripe = 0.2 + Math.sin(y * 0.05 + seed * 0.0002) * 0.12
@@ -214,6 +232,15 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
     ctx.beginPath()
     ctx.ellipse(710, 286, 170, 92, 0.26, 0, Math.PI * 2)
     ctx.fill()
+    for (let i = 0; i < 6; i += 1) {
+      const cy = rand(i + 2117) * 512
+      const band = ctx.createLinearGradient(0, cy - 20, 1024, cy + 20)
+      band.addColorStop(0, 'rgba(255,237,213,0)')
+      band.addColorStop(0.5, 'rgba(255,237,213,0.25)')
+      band.addColorStop(1, 'rgba(255,237,213,0)')
+      ctx.fillStyle = band
+      ctx.fillRect(0, cy - 14, 1024, 28)
+    }
   } else if (planetId === 'nebula') {
     for (let i = 0; i < 12; i += 1) {
       ctx.strokeStyle = i % 2 === 0 ? '#f5d0fe99' : '#67e8f988'
@@ -230,6 +257,17 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
       )
       ctx.stroke()
     }
+    for (let i = 0; i < 14; i += 1) {
+      const x = rand(i + 2191) * 1024
+      const y = rand(i + 2249) * 512
+      const dust = ctx.createRadialGradient(x, y, 0, x, y, 40 + rand(i + 2301) * 60)
+      dust.addColorStop(0, i % 2 === 0 ? '#d8b4fe66' : '#67e8f955')
+      dust.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = dust
+      ctx.beginPath()
+      ctx.arc(x, y, 32 + rand(i + 2347) * 55, 0, Math.PI * 2)
+      ctx.fill()
+    }
   } else if (planetId === 'black-hole') {
     ctx.fillStyle = '#04060e'
     ctx.fillRect(0, 0, 1024, 512)
@@ -241,6 +279,14 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
       const y = rand(i + 493) * 512
       ctx.moveTo(x, y)
       ctx.lineTo(x + (rand(i + 521) - 0.5) * 160, y + (rand(i + 547) - 0.5) * 120)
+      ctx.stroke()
+    }
+    for (let i = 0; i < 7; i += 1) {
+      const arcR = 120 + i * 24
+      ctx.strokeStyle = i % 2 === 0 ? '#f59e0b66' : '#fb923c44'
+      ctx.lineWidth = 2.4
+      ctx.beginPath()
+      ctx.ellipse(512, 256, arcR, arcR * 0.35, 0.5, 0.3 + i * 0.2, 2.2 + i * 0.22)
       ctx.stroke()
     }
   } else if (planetId === 'ice-world') {
@@ -255,6 +301,17 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
       ctx.moveTo(x, y)
       ctx.lineTo(x + (rand(i + 665) - 0.5) * 220, y + (rand(i + 687) - 0.5) * 150)
       ctx.stroke()
+    }
+    for (let i = 0; i < 11; i += 1) {
+      const x = rand(i + 2411) * 1024
+      const y = rand(i + 2453) * 512
+      const glacier = ctx.createRadialGradient(x, y, 0, x, y, 45 + rand(i + 2519) * 95)
+      glacier.addColorStop(0, '#ecfeff99')
+      glacier.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = glacier
+      ctx.beginPath()
+      ctx.ellipse(x, y, 60 + rand(i + 2579) * 80, 22 + rand(i + 2621) * 38, rand(i + 2663), 0, Math.PI * 2)
+      ctx.fill()
     }
   } else if (planetId === 'ancient-ruins') {
     for (let i = 0; i < 10; i += 1) {
@@ -279,13 +336,22 @@ function makeAlbedo(scene: Scene, planetId: string, theme: Theme, seed: number) 
       ctx.ellipse(x, y, 55 + rand(i + 834) * 80, 24 + rand(i + 853) * 44, rand(i + 877), 0, Math.PI * 2)
       ctx.fill()
     }
+    for (let i = 0; i < 9; i += 1) {
+      const y = rand(i + 2701) * 512
+      ctx.strokeStyle = '#7c2d1266'
+      ctx.lineWidth = 6 + rand(i + 2753) * 4
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(1024, y + (rand(i + 2797) - 0.5) * 34)
+      ctx.stroke()
+    }
   }
 
   texture.update(false)
   return texture
 }
 
-function makeNormalLike(scene: Scene, seed: number) {
+function makeNormalLike(scene: Scene, planetId: string, seed: number) {
   const texture = new DynamicTexture(`planet-normal-${seed}`, { width: 512, height: 512 }, scene, false)
   const ctx = texture.getContext() as unknown as CanvasRenderingContext2D
   const rand = (n: number) => {
@@ -294,7 +360,7 @@ function makeNormalLike(scene: Scene, seed: number) {
   }
   ctx.fillStyle = '#7f7fff'
   ctx.fillRect(0, 0, 512, 512)
-  for (let i = 0; i < 180; i += 1) {
+  for (let i = 0; i < 220; i += 1) {
     const x = rand(i + 1) * 512
     const y = rand(i + 2) * 512
     const r = 6 + rand(i + 3) * 20
@@ -303,6 +369,43 @@ function makeNormalLike(scene: Scene, seed: number) {
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.fill()
+  }
+
+  if (planetId === 'gas-giant') {
+    for (let y = 0; y < 512; y += 16) {
+      const lift = 0.08 + Math.sin(y * 0.05 + seed * 0.002) * 0.05
+      ctx.fillStyle = `rgba(155,155,255,${lift.toFixed(3)})`
+      ctx.fillRect(0, y, 512, 10)
+    }
+  } else if (planetId === 'ice-world') {
+    for (let i = 0; i < 26; i += 1) {
+      ctx.strokeStyle = `rgba(172,172,255,${(0.1 + rand(i + 301) * 0.11).toFixed(3)})`
+      ctx.lineWidth = 1.5 + rand(i + 325) * 2.4
+      ctx.beginPath()
+      const x = rand(i + 349) * 512
+      const y = rand(i + 377) * 512
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + (rand(i + 401) - 0.5) * 180, y + (rand(i + 439) - 0.5) * 120)
+      ctx.stroke()
+    }
+  } else if (planetId === 'ancient-ruins') {
+    for (let i = 0; i < 18; i += 1) {
+      const x = rand(i + 463) * 512
+      const y = rand(i + 491) * 512
+      const r = 10 + rand(i + 521) * 24
+      ctx.strokeStyle = `rgba(98,98,255,${(0.12 + rand(i + 547) * 0.1).toFixed(3)})`
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  } else if (planetId === 'earth-like') {
+    for (let i = 0; i < 16; i += 1) {
+      ctx.fillStyle = `rgba(150,150,255,${(0.06 + rand(i + 571) * 0.08).toFixed(3)})`
+      ctx.beginPath()
+      ctx.ellipse(rand(i + 601) * 512, rand(i + 631) * 512, 30 + rand(i + 659) * 70, 8 + rand(i + 683) * 24, rand(i + 709), 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
   texture.update(false)
   return texture
@@ -606,13 +709,22 @@ export function PlanetSceneBabylon({
     planet.parent = planetPivot
     const planetMat = new PBRMaterial('planet-pbr', scene)
     planetMat.albedoTexture = makeAlbedo(scene, planetId, theme, planetSeed * 17)
-    planetMat.bumpTexture = makeNormalLike(scene, planetSeed * 39)
-    planetMat.metallic = planetId === 'black-hole' ? 0.42 : 0.06
-    planetMat.roughness = planetId === 'ice-world' ? 0.28 : planetId === 'gas-giant' ? 0.58 : 0.5
+    planetMat.bumpTexture = makeNormalLike(scene, planetId, planetSeed * 39)
+    planetMat.metallic = planetId === 'black-hole' ? 0.18 : 0.03
+    planetMat.roughness =
+      planetId === 'ice-world'
+        ? 0.36
+        : planetId === 'gas-giant'
+          ? 0.66
+          : planetId === 'ancient-ruins'
+            ? 0.72
+            : planetId === 'earth-like'
+              ? 0.56
+              : 0.52
     planetMat.clearCoat.isEnabled = true
-    planetMat.clearCoat.intensity = planetId === 'gas-giant' ? 0.35 : 0.52
-    planetMat.clearCoat.roughness = 0.35
-    planetMat.environmentIntensity = 0.95
+    planetMat.clearCoat.intensity = planetId === 'gas-giant' ? 0.22 : planetId === 'ice-world' ? 0.64 : 0.48
+    planetMat.clearCoat.roughness = planetId === 'ice-world' ? 0.18 : 0.32
+    planetMat.environmentIntensity = planetId === 'black-hole' ? 0.62 : 1.02
     planetMat.emissiveColor = Color3.FromHexString(theme.ring).scale(0.08)
     if (planetId === 'earth-like') {
       planetMat.emissiveTexture = makeCityLights(scene, planetSeed * 91)
@@ -624,7 +736,7 @@ export function PlanetSceneBabylon({
     clouds.parent = planetPivot
     const cloudMat = new StandardMaterial('cloud-mat', scene)
     cloudMat.diffuseColor = Color3.FromHexString(theme.cloud)
-    cloudMat.alpha = planetId === 'black-hole' ? 0.05 : 0.18
+    cloudMat.alpha = planetId === 'black-hole' ? 0.03 : planetId === 'gas-giant' ? 0.22 : planetId === 'earth-like' ? 0.19 : 0.16
     cloudMat.emissiveColor = Color3.FromHexString(theme.cloud).scale(0.15)
     cloudMat.emissiveFresnelParameters = new FresnelParameters()
     cloudMat.emissiveFresnelParameters.leftColor = Color3.FromHexString(theme.cloud).scale(0.35)
@@ -821,14 +933,6 @@ export function PlanetSceneBabylon({
         shipNode.position.copyFrom(worldPos)
         const lookTarget = worldPos.add(worldTan)
         shipNode.lookAt(lookTarget)
-        const horizontal = Math.sqrt(worldTan.x * worldTan.x + worldTan.z * worldTan.z)
-        const pitch = -Math.atan2(worldTan.y, Math.max(0.0001, horizontal)) * 0.4
-        shipNode.rotation.x = pitch
-
-        // Light banking proportional to turning speed for more physical flight feel.
-        const bankSign = reverse ? -1 : 1
-        const bank = Math.max(-0.26, Math.min(0.26, speed * 0.11 * bankSign))
-        shipNode.rotation.z = bank
       }
 
       for (const moonPivot of moonNodes) {
