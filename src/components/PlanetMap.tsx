@@ -1,0 +1,135 @@
+import type { CSSProperties } from 'react'
+import { useRef } from 'react'
+import type { AsteroidParticle } from './Asteroid'
+
+export type Planet = {
+  id: string
+  name: string
+  subtitle: string
+  unlocked: boolean
+  unlockLevel: number
+  passiveMultiplier: number
+  tapBonus: {
+    crystals: number
+    energyChance: number
+    stardustChance: number
+  }
+  objectClass: string
+  icon: string
+}
+
+export type FleetShip = {
+  id: string
+  name: string
+  icon: string
+  level: number
+}
+
+type PlanetMapProps = {
+  planets: Planet[]
+  activePlanetId: string
+  ships: FleetShip[]
+  isTapBurst: boolean
+  particles: AsteroidParticle[]
+  onSelectPlanet: (planetId: string) => void
+  onTapPlanet: (x: number, y: number) => void
+}
+
+export function PlanetMap({
+  planets,
+  activePlanetId,
+  ships,
+  isTapBurst,
+  particles,
+  onSelectPlanet,
+  onTapPlanet,
+}: PlanetMapProps) {
+  const planetRef = useRef<HTMLDivElement | null>(null)
+  const activePlanet =
+    planets.find((planet) => planet.id === activePlanetId) ?? planets[0]
+
+  const onTap = (clientX: number, clientY: number) => {
+    const rect = planetRef.current?.getBoundingClientRect()
+    if (!rect || !activePlanet?.unlocked) return
+    onTapPlanet(clientX - rect.left, clientY - rect.top)
+  }
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-4">
+      <div className="planet-scroll">
+        {planets.map((planet) => {
+          const isActive = planet.id === activePlanetId
+          return (
+            <button
+              key={planet.id}
+              type="button"
+              onClick={() => planet.unlocked && onSelectPlanet(planet.id)}
+              className={`planet-chip ${isActive ? 'planet-chip-active' : ''}`}
+              disabled={!planet.unlocked}
+            >
+              <span>{planet.icon}</span>
+              <span>{planet.name}</span>
+              {!planet.unlocked && <span className="text-[10px]">Lv.{planet.unlockLevel}</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-3 flex flex-col items-center">
+        <p className="text-sm text-cyan-100">
+          Текущая планета: {activePlanet.name} — +{activePlanet.passiveMultiplier}x пассив
+        </p>
+        <p className="mt-1 text-xs text-slate-300">{activePlanet.subtitle}</p>
+
+        <div className="planet-stage mt-4">
+          <div
+            ref={planetRef}
+            className={`planet-core ${activePlanet.objectClass} ${isTapBurst ? 'tap-burst' : ''}`}
+            onClick={(event) => onTap(event.clientX, event.clientY)}
+            onTouchStart={(event) => {
+              event.preventDefault()
+              const firstTouch = event.touches[0]
+              if (!firstTouch) return
+              onTap(firstTouch.clientX, firstTouch.clientY)
+            }}
+          >
+            {particles.map((particle) => (
+              <div
+                key={particle.id}
+                className="particle"
+                style={
+                  {
+                    left: `${particle.x}px`,
+                    top: `${particle.y}px`,
+                    width: `${particle.size}px`,
+                    height: `${particle.size}px`,
+                    '--dx': `${particle.dx}px`,
+                    '--dy': `${particle.dy}px`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+            <span className="planet-emoji">{activePlanet.icon}</span>
+          </div>
+
+          {/* Визуал флота вокруг активной планеты */}
+          <div className="ship-ring">
+            {ships.map((ship, index) => (
+              <div
+                key={ship.id}
+                className="ship-orbit"
+                style={{ animationDelay: `${index * 0.9}s` }}
+                title={`${ship.name} Lv.${ship.level}`}
+              >
+                <span className="ship-badge">
+                  {ship.icon}
+                  <small>Lv.{ship.level}</small>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}

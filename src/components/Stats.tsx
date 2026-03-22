@@ -8,6 +8,9 @@ type StatsProps = {
   walletAddress: string
   levelProgress: number
   levelProgressTotal: number
+  currentPlanetName: string
+  currentPlanetPassive: number
+  freeUpgradeTokens: number
 }
 
 function formatNumber(value: number): string {
@@ -24,6 +27,9 @@ export function Stats({
   walletAddress,
   levelProgress,
   levelProgressTotal,
+  currentPlanetName,
+  currentPlanetPassive,
+  freeUpgradeTokens,
 }: StatsProps) {
   const progressPercent = Math.min(
     100,
@@ -56,6 +62,13 @@ export function Stats({
           />
         </div>
       </div>
+      <p className="mt-3 text-xs text-cyan-200">
+        Текущая планета: {currentPlanetName} — +{formatNumber(currentPlanetPassive)}x
+        пассив
+      </p>
+      <p className="mt-1 text-xs text-amber-200">
+        Бесплатные апгрейды (артефакты): {freeUpgradeTokens}
+      </p>
       <p className="mt-3 text-xs text-slate-300">Кошелёк: {walletAddress}</p>
     </section>
   )
