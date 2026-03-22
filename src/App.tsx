@@ -102,6 +102,7 @@ type TabType =
 const PASSIVE_TICK_MS = BALANCE.tick.passiveMs
 const ENERGY_TICK_MS = BALANCE.tick.energyMs
 const MAX_OFFLINE_MS = BALANCE.offline.maxMs
+const ASSET_BASE = import.meta.env.BASE_URL
 
 function envFlag(name: string, fallback: boolean): boolean {
   const value = import.meta.env[name]
@@ -119,7 +120,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.0,
     tapBonus: { crystals: 1.0, energyChance: 0, stardustChance: 0 },
     objectClass: 'planet-earth',
-    icon: '/assets/planets/earth-like.svg',
+    icon: `${ASSET_BASE}assets/planets/earth-like.svg`,
   },
   {
     id: 'gas-giant',
@@ -130,7 +131,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.5,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 0 },
     objectClass: 'planet-gas',
-    icon: '/assets/planets/gas-giant.svg',
+    icon: `${ASSET_BASE}assets/planets/gas-giant.svg`,
   },
   {
     id: 'nebula',
@@ -141,7 +142,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 0.8,
     tapBonus: { crystals: 1.0, energyChance: 0.05, stardustChance: 0.2 },
     objectClass: 'planet-nebula',
-    icon: '/assets/planets/nebula.svg',
+    icon: `${ASSET_BASE}assets/planets/nebula.svg`,
   },
   {
     id: 'black-hole',
@@ -152,7 +153,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 2.2,
     tapBonus: { crystals: 1.25, energyChance: 0.01, stardustChance: 0.4 },
     objectClass: 'planet-blackhole',
-    icon: '/assets/planets/black-hole.svg',
+    icon: `${ASSET_BASE}assets/planets/black-hole.svg`,
   },
   {
     id: 'ice-world',
@@ -163,7 +164,7 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 1.8,
     tapBonus: { crystals: 1.15, energyChance: 0.03, stardustChance: 0.6 },
     objectClass: 'planet-ice',
-    icon: '/assets/planets/ice-world.svg',
+    icon: `${ASSET_BASE}assets/planets/ice-world.svg`,
   },
   {
     id: 'ancient-ruins',
@@ -174,14 +175,29 @@ const PLANETS_TEMPLATE: Planet[] = [
     passiveMultiplier: 3.0,
     tapBonus: { crystals: 1.1, energyChance: 0.02, stardustChance: 3.0 },
     objectClass: 'planet-ruins',
-    icon: '/assets/planets/ancient-ruins.svg',
+    icon: `${ASSET_BASE}assets/planets/ancient-ruins.svg`,
   },
 ]
 
 const SHIPS_TEMPLATE: FleetShip[] = [
-  { id: 'mining-drone', name: 'Mining Drone', icon: '/assets/ships/mining-drone.svg', level: 0 },
-  { id: 'explorer-scout', name: 'Explorer Scout', icon: '/assets/ships/explorer-scout.svg', level: 0 },
-  { id: 'harvester-probe', name: 'Harvester Probe', icon: '/assets/ships/harvester-probe.svg', level: 0 },
+  {
+    id: 'mining-drone',
+    name: 'Mining Drone',
+    icon: `${ASSET_BASE}assets/ships/mining-drone.svg`,
+    level: 0,
+  },
+  {
+    id: 'explorer-scout',
+    name: 'Explorer Scout',
+    icon: `${ASSET_BASE}assets/ships/explorer-scout.svg`,
+    level: 0,
+  },
+  {
+    id: 'harvester-probe',
+    name: 'Harvester Probe',
+    icon: `${ASSET_BASE}assets/ships/harvester-probe.svg`,
+    level: 0,
+  },
 ]
 
 const CHAPTERS = [
@@ -671,9 +687,30 @@ function App() {
       const baseTapCount = parsed.tapCount ?? 0
       const baseUpgrades = parsed.upgradesBought ?? 0
       const baseLastSeen = parsed.lastSeenAt ?? Date.now()
-      const baseCurrentPlanetId = parsed.currentPlanetId ?? PLANETS_TEMPLATE[0].id
-      const basePlanets = parsed.planets ?? PLANETS_TEMPLATE
-      const baseShips = parsed.ships ?? SHIPS_TEMPLATE
+      const savedPlanets = Array.isArray(parsed.planets) ? parsed.planets : []
+      const savedShips = Array.isArray(parsed.ships) ? parsed.ships : []
+      const savedPlanetById = new Map(savedPlanets.map((planet) => [planet.id, planet]))
+      const savedShipById = new Map(savedShips.map((ship) => [ship.id, ship]))
+      const basePlanets = PLANETS_TEMPLATE.map((planet) => {
+        const saved = savedPlanetById.get(planet.id)
+        if (!saved) return planet
+        return {
+          ...planet,
+          unlocked: saved.unlocked ?? planet.unlocked,
+        }
+      })
+      const baseShips = SHIPS_TEMPLATE.map((ship) => {
+        const saved = savedShipById.get(ship.id)
+        if (!saved) return ship
+        return {
+          ...ship,
+          level: typeof saved.level === 'number' ? Math.max(0, Math.floor(saved.level)) : 0,
+        }
+      })
+      const requestedPlanetId = parsed.currentPlanetId ?? PLANETS_TEMPLATE[0].id
+      const baseCurrentPlanetId = basePlanets.some((planet) => planet.id === requestedPlanetId)
+        ? requestedPlanetId
+        : PLANETS_TEMPLATE[0].id
       const baseExpeditions = parsed.expeditions ?? []
       const baseFreeTokens = parsed.freeUpgradeTokens ?? 0
       const baseCurrentChapter = parsed.currentChapter ?? 1
