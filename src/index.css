@@ -176,7 +176,7 @@ body {
 }
 
 .planet-stage {
-  --orbit-outer-size: min(470px, 100%);
+  --orbit-outer-size: clamp(248px, calc(100vw - 56px), 470px);
   --planet-size: clamp(228px, calc(var(--orbit-outer-size) * 0.7), 300px);
   --cam-rotate-x: 0deg;
   --cam-rotate-y: 0deg;
@@ -818,7 +818,7 @@ body {
 
 @media (max-width: 768px) {
   .planet-stage {
-    --orbit-outer-size: min(430px, 100%);
+    --orbit-outer-size: clamp(232px, calc(100vw - 44px), 430px);
     --planet-size: clamp(216px, calc(var(--orbit-outer-size) * 0.72), 286px);
     perspective: 900px;
   }
@@ -831,7 +831,7 @@ body {
 
 @media (max-width: 480px) {
   .planet-stage {
-    --orbit-outer-size: min(360px, 100%);
+    --orbit-outer-size: clamp(224px, calc(100vw - 28px), 360px);
     --planet-size: clamp(204px, calc(var(--orbit-outer-size) * 0.74), 258px);
     perspective: 760px;
     padding-inline: 2px;
