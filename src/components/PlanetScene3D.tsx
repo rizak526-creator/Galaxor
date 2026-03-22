@@ -643,6 +643,25 @@ function PlanetBiomeFx({
   return null
 }
 
+function getOrbitPoint(orbit: OrbitProfile & { radius: number }, theta: number) {
+  const ecc = orbit.eccentricity
+  const ellipseScale = 1 - ecc * 0.32
+  const cosT = Math.cos(theta)
+  const sinT = Math.sin(theta)
+  const a = orbit.radius
+  const b = orbit.radius * ellipseScale
+  const x0 = cosT * a
+  const z0 = sinT * b
+  const cosP = Math.cos(orbit.periapsis)
+  const sinP = Math.sin(orbit.periapsis)
+  return {
+    x: x0 * cosP - z0 * sinP,
+    z: x0 * sinP + z0 * cosP,
+    tangentX: -sinT * a * cosP - cosT * b * sinP,
+    tangentZ: -sinT * a * sinP + cosT * b * cosP,
+  }
+}
+
 function SceneContent({
   planetId,
   ships,
@@ -697,6 +716,21 @@ function SceneContent({
           0.35,
       })),
     [planetRadius, ships],
+  )
+
+  const orbitLinePositions = useMemo(
+    () =>
+      orbitParams.map((orbit) => {
+        const segments = 180
+        const pts: number[] = []
+        for (let i = 0; i <= segments; i += 1) {
+          const t = (i / segments) * Math.PI * 2
+          const p = getOrbitPoint(orbit, t)
+          pts.push(p.x, 0, p.z)
+        }
+        return new Float32Array(pts)
+      }),
+    [orbitParams],
   )
 
   useFrame((state, delta) => {
@@ -777,24 +811,13 @@ function SceneContent({
       const safeDelta = Math.max(delta, 0.0001)
       const timeScale = reducedMotion ? 0.3 : 1
       const direction = orbit.reverse ? -1 : 1
-      const theta = t * orbit.speed * timeScale + orbit.phase
-      const ecc = orbit.eccentricity
-      const ellipseScale = 1 - ecc * 0.32
-      const orbitalTheta = theta * direction
-      const cosT = Math.cos(orbitalTheta)
-      const sinT = Math.sin(orbitalTheta)
-      const a = orbit.radius
-      const b = orbit.radius * ellipseScale
-      const x0 = cosT * a
-      const z0 = sinT * b
-      const cosP = Math.cos(orbit.periapsis)
-      const sinP = Math.sin(orbit.periapsis)
-      const x = x0 * cosP - z0 * sinP
-      const z = x0 * sinP + z0 * cosP
+      const theta = (t * orbit.speed * timeScale + orbit.phase) * direction
+      const point = getOrbitPoint(orbit, theta)
+      const x = point.x
+      const z = point.z
       sat.position.set(x, 0, z)
-
-      const tangentX = (-sinT * a * cosP - cosT * b * sinP) * direction
-      const tangentZ = (-sinT * a * sinP + cosT * b * cosP) * direction
+      const tangentX = point.tangentX * direction
+      const tangentZ = point.tangentZ * direction
 
       const prevPos = prevPosRefs.current[i] ?? new THREE.Vector3(x, 0, z)
       const instVelocity = new THREE.Vector3(
@@ -921,10 +944,15 @@ function SceneContent({
 
       {orbitParams.map((orbit, idx) => (
         <group key={`orbit-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
-          <mesh rotation={[Math.PI / 2, orbit.periapsis, 0]} scale={[1, 1 - orbit.eccentricity * 0.32, 1]}>
-            <torusGeometry args={[orbit.radius, orbit.lineThickness + idx * 0.0012, 10, 220]} />
-            <meshBasicMaterial color={theme.orbit} transparent opacity={orbit.lineOpacity + idx * 0.02} />
-          </mesh>
+          <line>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                args={[orbitLinePositions[idx] ?? new Float32Array(), 3]}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial color={theme.orbit} transparent opacity={orbit.lineOpacity + idx * 0.02} />
+          </line>
         </group>
       ))}
 
