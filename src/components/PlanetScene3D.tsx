@@ -666,8 +666,9 @@ function SceneContent({
         ...getOrbitProfile(ship.id, index, planetRadius),
         radius: planetRadius + getOrbitProfile(ship.id, index, planetRadius).radiusOffset,
         bodyScale:
-          getOrbitProfile(ship.id, index, planetRadius).bodyScale +
-          Math.min(ship.level, 30) * 0.018,
+          (getOrbitProfile(ship.id, index, planetRadius).bodyScale +
+            Math.min(ship.level, 30) * 0.018) *
+          0.5,
       })),
     [planetRadius, ships],
   )
@@ -851,38 +852,43 @@ function SceneContent({
           <group ref={(node: THREE.Group | null) => (satelliteRefs.current[index] = node)}>
             <group scale={orbit.bodyScale}>
               <ShipModel shipId={orbit.id} ringColor={theme.ring} />
+              <mesh position={[0, -0.02, -0.22]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.032, 0.12, 0.56, 12, 1, true]} />
+                <meshBasicMaterial
+                  color={orbit.trailColor}
+                  transparent
+                  opacity={0.72}
+                  depthWrite={false}
+                  blending={THREE.AdditiveBlending}
+                />
+              </mesh>
+              <mesh position={[0, -0.02, -0.44]} rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.018, 0.08, 0.48, 10, 1, true]} />
+                <meshBasicMaterial
+                  color={orbit.trailColor}
+                  transparent
+                  opacity={0.44}
+                  depthWrite={false}
+                  blending={THREE.AdditiveBlending}
+                />
+              </mesh>
+              <mesh position={[0, 0.02, -0.38]}>
+                <sphereGeometry args={[0.08, 14, 14]} />
+                <meshBasicMaterial
+                  color={orbit.trailColor}
+                  transparent
+                  opacity={0.34}
+                  depthWrite={false}
+                  blending={THREE.AdditiveBlending}
+                />
+              </mesh>
+              <pointLight
+                position={[0, 0.02, -0.16]}
+                intensity={0.34}
+                color={orbit.trailColor}
+                distance={1.6}
+              />
             </group>
-            <mesh position={[0, -0.02, -0.22]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.032, 0.12, 0.56, 12, 1, true]} />
-              <meshBasicMaterial
-                color={orbit.trailColor}
-                transparent
-                opacity={0.72}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-              />
-            </mesh>
-            <mesh position={[0, -0.02, -0.44]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.018, 0.08, 0.48, 10, 1, true]} />
-              <meshBasicMaterial
-                color={orbit.trailColor}
-                transparent
-                opacity={0.44}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-              />
-            </mesh>
-            <mesh position={[0, 0.02, -0.38]}>
-              <sphereGeometry args={[0.08, 14, 14]} />
-              <meshBasicMaterial
-                color={orbit.trailColor}
-                transparent
-                opacity={0.34}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-              />
-            </mesh>
-            <pointLight position={[0, 0.02, -0.16]} intensity={0.34} color={orbit.trailColor} distance={1.6} />
           </group>
         </group>
       ))}
