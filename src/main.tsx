@@ -4,9 +4,10 @@ import { TonConnectUIProvider } from '@tonconnect/ui-react'
 import './index.css'
 import App from './App.tsx'
 
+// Если переменная окружения не задана, берём manifest с текущего домена.
 const manifestUrl =
-  import.meta.env.TON_CONNECT_MANIFEST_URL ??
-  'https://galaxor.ru/tonconnect-manifest.json'
+  import.meta.env.TON_CONNECT_MANIFEST_URL?.trim() ||
+  `${window.location.origin}/tonconnect-manifest.json`
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
