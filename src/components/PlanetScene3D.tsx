@@ -55,6 +55,11 @@ type OrbitProfile = {
   spinY: number
   phase: number
   bodyScale: number
+  eccentricity: number
+  periapsis: number
+  yawDamping: number
+  bankFactor: number
+  pitchFactor: number
   reverse?: boolean
   lineOpacity: number
   lineThickness: number
@@ -209,6 +214,11 @@ function getOrbitProfile(
       spinY: 0.2,
       phase: 0.6,
       bodyScale: 1.86,
+      eccentricity: 0.09,
+      periapsis: 0.38,
+      yawDamping: 11,
+      bankFactor: 0.24,
+      pitchFactor: 0.08,
       lineOpacity: 0.28,
       lineThickness: 0.01,
       trailColor: '#22d3ee',
@@ -222,6 +232,11 @@ function getOrbitProfile(
       spinY: 1.1,
       phase: 2.1,
       bodyScale: 1.78,
+      eccentricity: 0.16,
+      periapsis: 1.6,
+      yawDamping: 13,
+      bankFactor: 0.3,
+      pitchFactor: 0.1,
       lineOpacity: 0.24,
       lineThickness: 0.008,
       trailColor: '#a78bfa',
@@ -234,6 +249,11 @@ function getOrbitProfile(
     spinY: 1.9,
     phase: 3.4 + index * 0.2,
     bodyScale: 1.94,
+    eccentricity: 0.12,
+    periapsis: 2.35,
+    yawDamping: 10,
+    bankFactor: 0.22,
+    pitchFactor: 0.08,
     reverse: true,
     lineOpacity: 0.22,
     lineThickness: 0.009,
@@ -637,6 +657,13 @@ function SceneContent({
   const cloudsRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial> | null>(null)
   const auraRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null>(null)
   const satelliteRefs = useRef<Array<THREE.Group | null>>([])
+  const modelRefs = useRef<Array<THREE.Group | null>>([])
+  const prevPosRefs = useRef<Array<THREE.Vector3 | null>>([])
+  const velocityRefs = useRef<Array<THREE.Vector3>>([])
+  const prevVelocityRefs = useRef<Array<THREE.Vector3>>([])
+  const bankRefs = useRef<number[]>([])
+  const pitchRefs = useRef<number[]>([])
+  const lookHelperRef = useRef(new THREE.Object3D())
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
   const tapScaleTargetRef = useRef(1)
   const theme = THEMES[planetId] ?? THEMES['earth-like']
@@ -745,15 +772,58 @@ function SceneContent({
 
     for (let i = 0; i < orbitParams.length; i += 1) {
       const sat = satelliteRefs.current[i]
+      const model = modelRefs.current[i]
       const orbit = orbitParams[i]
       if (!sat || !orbit) continue
+      const safeDelta = Math.max(delta, 0.0001)
       const timeScale = reducedMotion ? 0.3 : 1
       const direction = orbit.reverse ? -1 : 1
-      const angle = t * orbit.speed * timeScale * direction + orbit.phase
-      const x = Math.cos(angle) * orbit.radius
-      const z = Math.sin(angle) * orbit.radius
+      const anomaly = t * orbit.speed * timeScale * direction + orbit.phase
+      const theta = anomaly + orbit.periapsis
+      const ecc = orbit.eccentricity
+      const radius =
+        (orbit.radius * (1 - ecc * ecc)) /
+        Math.max(0.58, 1 + ecc * Math.cos(theta))
+      const x = Math.cos(theta) * radius
+      const z = Math.sin(theta) * radius
       sat.position.set(x, 0, z)
-      sat.rotation.y = angle + Math.PI / 2
+
+      const prevPos = prevPosRefs.current[i] ?? new THREE.Vector3(x, 0, z)
+      const instVelocity = new THREE.Vector3(
+        (x - prevPos.x) / safeDelta,
+        0,
+        (z - prevPos.z) / safeDelta,
+      )
+      const velRef =
+        velocityRefs.current[i] ?? new THREE.Vector3(instVelocity.x, 0, instVelocity.z)
+      const prevVel =
+        prevVelocityRefs.current[i] ?? new THREE.Vector3(instVelocity.x, 0, instVelocity.z)
+
+      velRef.lerp(instVelocity, 1 - Math.exp(-safeDelta * 10))
+      const speedMag = velRef.length()
+      if (speedMag > 0.0001) {
+        const forward = velRef.clone().normalize()
+        const lookTarget = lookHelperRef.current
+        lookTarget.position.set(x, 0, z)
+        lookTarget.lookAt(x + forward.x, 0, z + forward.z)
+        sat.quaternion.slerp(lookTarget.quaternion, 1 - Math.exp(-safeDelta * orbit.yawDamping))
+
+        if (model) {
+          const acceleration = velRef.clone().sub(prevVel).divideScalar(safeDelta)
+          const lateral = acceleration.dot(new THREE.Vector3(-forward.z, 0, forward.x))
+          const longitudinal = acceleration.dot(forward)
+          const targetBank = THREE.MathUtils.clamp(-lateral * orbit.bankFactor, -0.42, 0.42)
+          const targetPitch = THREE.MathUtils.clamp(longitudinal * orbit.pitchFactor, -0.22, 0.22)
+          bankRefs.current[i] = THREE.MathUtils.lerp(bankRefs.current[i] ?? 0, targetBank, 0.14)
+          pitchRefs.current[i] = THREE.MathUtils.lerp(pitchRefs.current[i] ?? 0, targetPitch, 0.12)
+          model.rotation.z = bankRefs.current[i] ?? 0
+          model.rotation.x = pitchRefs.current[i] ?? 0
+        }
+      }
+
+      prevPosRefs.current[i] = new THREE.Vector3(x, 0, z)
+      prevVelocityRefs.current[i] = velRef.clone()
+      velocityRefs.current[i] = velRef
       sat.rotation.z = 0
       const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.78, 1.14)
       sat.scale.setScalar(depth)
@@ -840,7 +910,7 @@ function SceneContent({
 
       {orbitParams.map((orbit, idx) => (
         <group key={`orbit-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <mesh rotation={[Math.PI / 2, orbit.periapsis, 0]} scale={[1, 1 - orbit.eccentricity * 0.32, 1]}>
             <torusGeometry args={[orbit.radius, orbit.lineThickness + idx * 0.0012, 10, 220]} />
             <meshBasicMaterial color={theme.orbit} transparent opacity={orbit.lineOpacity + idx * 0.02} />
           </mesh>
@@ -850,9 +920,14 @@ function SceneContent({
       {orbitParams.map((orbit, index) => (
         <group key={`sat-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
           <group ref={(node: THREE.Group | null) => (satelliteRefs.current[index] = node)}>
-            <group scale={orbit.bodyScale}>
-              <ShipModel shipId={orbit.id} ringColor={theme.ring} />
-              <mesh position={[0, -0.02, -0.22]} rotation={[Math.PI / 2, 0, 0]}>
+            <group
+              ref={(node: THREE.Group | null) => (modelRefs.current[index] = node)}
+              scale={orbit.bodyScale}
+            >
+              <group rotation={[0, Math.PI, 0]}>
+                <ShipModel shipId={orbit.id} ringColor={theme.ring} />
+              </group>
+              <mesh position={[0, -0.02, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.032, 0.12, 0.56, 12, 1, true]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -862,7 +937,7 @@ function SceneContent({
                   blending={THREE.AdditiveBlending}
                 />
               </mesh>
-              <mesh position={[0, -0.02, -0.44]} rotation={[Math.PI / 2, 0, 0]}>
+              <mesh position={[0, -0.02, 0.44]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.018, 0.08, 0.48, 10, 1, true]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -872,7 +947,7 @@ function SceneContent({
                   blending={THREE.AdditiveBlending}
                 />
               </mesh>
-              <mesh position={[0, 0.02, -0.38]}>
+              <mesh position={[0, 0.02, 0.38]}>
                 <sphereGeometry args={[0.08, 14, 14]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -883,7 +958,7 @@ function SceneContent({
                 />
               </mesh>
               <pointLight
-                position={[0, 0.02, -0.16]}
+                position={[0, 0.02, 0.16]}
                 intensity={0.34}
                 color={orbit.trailColor}
                 distance={1.6}
