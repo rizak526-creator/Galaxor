@@ -25,6 +25,15 @@ type Theme = {
   orbit: string
 }
 
+type PlanetVisual = {
+  radius: number
+  roughness: number
+  metalness: number
+  clearcoat: number
+  cloudOpacity: number
+  emissiveIntensity: number
+}
+
 const THEMES: Record<string, Theme> = {
   'earth-like': {
     base: '#3b82f6',
@@ -74,6 +83,15 @@ const THEMES: Record<string, Theme> = {
     ring: '#fbbf24',
     orbit: '#fde68a',
   },
+}
+
+const PLANET_VISUALS: Record<string, PlanetVisual> = {
+  'earth-like': { radius: 1.45, roughness: 0.56, metalness: 0.08, clearcoat: 1, cloudOpacity: 0.2, emissiveIntensity: 0.18 },
+  'gas-giant': { radius: 1.78, roughness: 0.78, metalness: 0.03, clearcoat: 0.68, cloudOpacity: 0.28, emissiveIntensity: 0.12 },
+  nebula: { radius: 1.36, roughness: 0.34, metalness: 0.16, clearcoat: 1, cloudOpacity: 0.34, emissiveIntensity: 0.3 },
+  'black-hole': { radius: 1.1, roughness: 0.26, metalness: 0.32, clearcoat: 0.25, cloudOpacity: 0.05, emissiveIntensity: 0.46 },
+  'ice-world': { radius: 1.52, roughness: 0.28, metalness: 0.22, clearcoat: 1, cloudOpacity: 0.09, emissiveIntensity: 0.24 },
+  'ancient-ruins': { radius: 1.64, roughness: 0.74, metalness: 0.12, clearcoat: 0.52, cloudOpacity: 0.07, emissiveIntensity: 0.16 },
 }
 
 function createPlanetTexture(planetId: string, theme: Theme): THREE.CanvasTexture {
@@ -166,23 +184,31 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
     return (
       <group>
         <mesh>
-          <boxGeometry args={[0.24, 0.11, 0.13]} />
+          <boxGeometry args={[0.3, 0.13, 0.15]} />
           <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.18} />
         </mesh>
-        <mesh position={[0.2, 0.05, 0]} rotation={[0, 0, 0.24]}>
-          <boxGeometry args={[0.18, 0.03, 0.09]} />
+        <mesh position={[0.26, 0.06, 0]} rotation={[0, 0, 0.26]}>
+          <boxGeometry args={[0.22, 0.035, 0.1]} />
           <meshStandardMaterial color="#64748b" metalness={0.94} roughness={0.26} />
         </mesh>
-        <mesh position={[-0.2, 0.05, 0]} rotation={[0, 0, -0.24]}>
-          <boxGeometry args={[0.18, 0.03, 0.09]} />
+        <mesh position={[-0.26, 0.06, 0]} rotation={[0, 0, -0.26]}>
+          <boxGeometry args={[0.22, 0.035, 0.1]} />
           <meshStandardMaterial color="#64748b" metalness={0.94} roughness={0.26} />
         </mesh>
         <mesh position={[0, 0.03, 0.09]}>
-          <boxGeometry args={[0.09, 0.03, 0.05]} />
+          <boxGeometry args={[0.12, 0.04, 0.06]} />
           <meshStandardMaterial color="#e2e8f0" metalness={0.86} roughness={0.22} />
         </mesh>
+        <mesh position={[0.12, -0.01, 0.12]}>
+          <boxGeometry args={[0.06, 0.02, 0.04]} />
+          <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.35} />
+        </mesh>
+        <mesh position={[-0.12, -0.01, 0.12]}>
+          <boxGeometry args={[0.06, 0.02, 0.04]} />
+          <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.35} />
+        </mesh>
         <mesh position={[0, -0.01, -0.1]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.03, 0.1, 10]} />
+          <coneGeometry args={[0.048, 0.16, 10]} />
           <meshBasicMaterial color={ringColor} transparent opacity={0.8} />
         </mesh>
       </group>
@@ -193,19 +219,23 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
     return (
       <group>
         <mesh>
-          <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
+          <capsuleGeometry args={[0.062, 0.3, 8, 16]} />
           <meshStandardMaterial color="#e2e8f0" metalness={0.96} roughness={0.18} />
         </mesh>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <torusGeometry args={[0.16, 0.013, 8, 46]} />
           <meshStandardMaterial color="#7dd3fc" metalness={0.75} roughness={0.28} />
         </mesh>
+        <mesh position={[0, 0, 0.13]}>
+          <boxGeometry args={[0.07, 0.025, 0.05]} />
+          <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.32} />
+        </mesh>
         <mesh position={[0, 0.12, 0.04]}>
           <sphereGeometry args={[0.032, 12, 12]} />
           <meshBasicMaterial color="#f8fafc" />
         </mesh>
         <mesh position={[0, -0.02, -0.12]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.028, 0.11, 10]} />
+          <coneGeometry args={[0.042, 0.16, 10]} />
           <meshBasicMaterial color={ringColor} transparent opacity={0.78} />
         </mesh>
       </group>
@@ -236,9 +266,13 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
           <meshStandardMaterial color="#64748b" metalness={0.82} roughness={0.34} />
         </mesh>
       ))}
+      <mesh position={[0, 0, 0.12]}>
+        <boxGeometry args={[0.08, 0.026, 0.05]} />
+        <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.33} />
+      </mesh>
       <mesh position={[0, -0.06, 0.1]} rotation={[Math.PI, 0, 0]}>
-        <coneGeometry args={[0.03, 0.12, 10]} />
-        <meshBasicMaterial color={ringColor} />
+        <coneGeometry args={[0.046, 0.17, 10]} />
+        <meshBasicMaterial color={ringColor} transparent opacity={0.8} />
       </mesh>
     </group>
   )
@@ -261,10 +295,16 @@ function PlanetDecor({ planetId }: { planetId: string }) {
   }
   if (planetId === 'gas-giant') {
     return (
-      <mesh rotation={[Math.PI / 2.5, 0.22, 0]}>
-        <torusGeometry args={[2.08, 0.1, 18, 170]} />
-        <meshStandardMaterial color="#fdba74" transparent opacity={0.42} roughness={0.5} metalness={0.2} />
-      </mesh>
+      <group>
+        <mesh rotation={[Math.PI / 2.5, 0.22, 0]}>
+          <torusGeometry args={[2.18, 0.11, 18, 170]} />
+          <meshStandardMaterial color="#fdba74" transparent opacity={0.45} roughness={0.5} metalness={0.2} />
+        </mesh>
+        <mesh position={[0.75, 0.15, 1.36]}>
+          <sphereGeometry args={[0.16, 20, 20]} />
+          <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.42} />
+        </mesh>
+      </group>
     )
   }
   if (planetId === 'black-hole') {
@@ -298,6 +338,10 @@ function PlanetDecor({ planetId }: { planetId: string }) {
             <meshStandardMaterial color="#dbeafe" emissive="#93c5fd" emissiveIntensity={0.22} />
           </mesh>
         ))}
+        <mesh rotation={[Math.PI / 2.2, 0.4, 0]}>
+          <torusGeometry args={[1.95, 0.028, 10, 120]} />
+          <meshStandardMaterial color="#bfdbfe" transparent opacity={0.35} />
+        </mesh>
       </group>
     )
   }
@@ -314,6 +358,10 @@ function PlanetDecor({ planetId }: { planetId: string }) {
             <meshStandardMaterial color="#fcd34d" metalness={0.4} roughness={0.62} />
           </mesh>
         ))}
+        <mesh rotation={[Math.PI / 2, 0, Math.PI / 6]}>
+          <torusGeometry args={[1.95, 0.02, 6, 48]} />
+          <meshStandardMaterial color="#f59e0b" transparent opacity={0.24} />
+        </mesh>
       </group>
     )
   }
@@ -342,15 +390,9 @@ function SceneContent({
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
   const tapScaleTargetRef = useRef(1)
   const theme = THEMES[planetId] ?? THEMES['earth-like']
+  const visual = PLANET_VISUALS[planetId] ?? PLANET_VISUALS['earth-like']
   const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
-  const planetRadius = useMemo(() => {
-    if (planetId === 'gas-giant') return 1.66
-    if (planetId === 'black-hole') return 1.34
-    if (planetId === 'ice-world') return 1.46
-    if (planetId === 'ancient-ruins') return 1.56
-    if (planetId === 'nebula') return 1.5
-    return 1.52
-  }, [planetId])
+  const planetRadius = visual.radius
 
   useEffect(() => {
     tapScaleTargetRef.current = isTapBurst ? 1.06 : 1
@@ -362,10 +404,10 @@ function SceneContent({
         id: ship.id,
         radius: planetRadius + 0.58 + index * 0.34,
         speed: 0.42 + index * 0.14,
-        tiltX: 0.45 + index * 0.3,
-        spinY: index * 0.92,
+        tiltX: 0.45 + index * 0.24,
+        spinY: index * 1.1,
         phase: index * 2.2,
-        bodyScale: 1 + Math.min(ship.level, 30) * 0.012,
+        bodyScale: 1.35 + Math.min(ship.level, 30) * 0.015,
       })),
     [planetRadius, ships],
   )
@@ -448,10 +490,10 @@ function SceneContent({
             map={surfaceMap}
             color={theme.base}
             emissive={theme.emissive}
-            emissiveIntensity={0.22}
-            roughness={0.62}
-            metalness={0.14}
-            clearcoat={1}
+            emissiveIntensity={visual.emissiveIntensity}
+            roughness={visual.roughness}
+            metalness={visual.metalness}
+            clearcoat={visual.clearcoat}
             clearcoatRoughness={0.16}
             sheen={0.4}
             sheenColor={theme.cloud}
@@ -466,7 +508,7 @@ function SceneContent({
           <meshStandardMaterial
             color={theme.cloud}
             transparent
-            opacity={0.12}
+            opacity={visual.cloudOpacity}
             depthWrite={false}
             roughness={1}
             metalness={0.02}
