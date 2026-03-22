@@ -166,20 +166,24 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
     return (
       <group>
         <mesh>
-          <boxGeometry args={[0.22, 0.1, 0.12]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
+          <boxGeometry args={[0.24, 0.11, 0.13]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.18} />
         </mesh>
-        <mesh position={[0.18, 0.04, 0]} rotation={[0, 0, 0.2]}>
-          <boxGeometry args={[0.16, 0.03, 0.08]} />
+        <mesh position={[0.2, 0.05, 0]} rotation={[0, 0, 0.24]}>
+          <boxGeometry args={[0.18, 0.03, 0.09]} />
           <meshStandardMaterial color="#64748b" metalness={0.94} roughness={0.26} />
         </mesh>
-        <mesh position={[-0.18, 0.04, 0]} rotation={[0, 0, -0.2]}>
-          <boxGeometry args={[0.16, 0.03, 0.08]} />
+        <mesh position={[-0.2, 0.05, 0]} rotation={[0, 0, -0.24]}>
+          <boxGeometry args={[0.18, 0.03, 0.09]} />
           <meshStandardMaterial color="#64748b" metalness={0.94} roughness={0.26} />
         </mesh>
-        <mesh position={[0, -0.02, 0.08]}>
-          <sphereGeometry args={[0.028, 10, 10]} />
-          <meshBasicMaterial color={ringColor} />
+        <mesh position={[0, 0.03, 0.09]}>
+          <boxGeometry args={[0.09, 0.03, 0.05]} />
+          <meshStandardMaterial color="#e2e8f0" metalness={0.86} roughness={0.22} />
+        </mesh>
+        <mesh position={[0, -0.01, -0.1]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.03, 0.1, 10]} />
+          <meshBasicMaterial color={ringColor} transparent opacity={0.8} />
         </mesh>
       </group>
     )
@@ -189,16 +193,20 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
     return (
       <group>
         <mesh>
-          <capsuleGeometry args={[0.048, 0.22, 8, 16]} />
+          <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
           <meshStandardMaterial color="#e2e8f0" metalness={0.96} roughness={0.18} />
         </mesh>
         <mesh rotation={[0, 0, Math.PI / 2]}>
-          <torusGeometry args={[0.14, 0.012, 8, 46]} />
+          <torusGeometry args={[0.16, 0.013, 8, 46]} />
           <meshStandardMaterial color="#7dd3fc" metalness={0.75} roughness={0.28} />
         </mesh>
-        <mesh position={[0, 0.1, 0.03]}>
-          <sphereGeometry args={[0.03, 12, 12]} />
+        <mesh position={[0, 0.12, 0.04]}>
+          <sphereGeometry args={[0.032, 12, 12]} />
           <meshBasicMaterial color="#f8fafc" />
+        </mesh>
+        <mesh position={[0, -0.02, -0.12]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.028, 0.11, 10]} />
+          <meshBasicMaterial color={ringColor} transparent opacity={0.78} />
         </mesh>
       </group>
     )
@@ -228,8 +236,8 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
           <meshStandardMaterial color="#64748b" metalness={0.82} roughness={0.34} />
         </mesh>
       ))}
-      <mesh position={[0, -0.04, 0.09]}>
-        <sphereGeometry args={[0.025, 10, 10]} />
+      <mesh position={[0, -0.06, 0.1]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.03, 0.12, 10]} />
         <meshBasicMaterial color={ringColor} />
       </mesh>
     </group>
@@ -239,10 +247,16 @@ function ShipModel({ shipId, ringColor }: { shipId: string; ringColor: string })
 function PlanetDecor({ planetId }: { planetId: string }) {
   if (planetId === 'earth-like') {
     return (
-      <mesh position={[2.2, 0.44, -0.82]}>
-        <sphereGeometry args={[0.2, 20, 20]} />
-        <meshStandardMaterial color="#86efac" emissive="#22c55e" emissiveIntensity={0.2} />
-      </mesh>
+      <group>
+        <mesh position={[2.2, 0.44, -0.82]}>
+          <sphereGeometry args={[0.2, 20, 20]} />
+          <meshStandardMaterial color="#86efac" emissive="#22c55e" emissiveIntensity={0.2} />
+        </mesh>
+        <mesh position={[-2.45, -0.6, 0.7]}>
+          <sphereGeometry args={[0.08, 16, 16]} />
+          <meshStandardMaterial color="#f8fafc" emissive="#bfdbfe" emissiveIntensity={0.25} />
+        </mesh>
+      </group>
     )
   }
   if (planetId === 'gas-giant') {
@@ -263,6 +277,10 @@ function PlanetDecor({ planetId }: { planetId: string }) {
         <mesh rotation={[Math.PI / 2, 0.3, 0]}>
           <torusGeometry args={[1.48, 0.24, 20, 180]} />
           <meshBasicMaterial color="#fb923c" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <mesh position={[0, 1.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.09, 0.9, 10]} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.3} />
         </mesh>
       </group>
     )
@@ -325,6 +343,14 @@ function SceneContent({
   const tapScaleTargetRef = useRef(1)
   const theme = THEMES[planetId] ?? THEMES['earth-like']
   const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
+  const planetRadius = useMemo(() => {
+    if (planetId === 'gas-giant') return 1.66
+    if (planetId === 'black-hole') return 1.34
+    if (planetId === 'ice-world') return 1.46
+    if (planetId === 'ancient-ruins') return 1.56
+    if (planetId === 'nebula') return 1.5
+    return 1.52
+  }, [planetId])
 
   useEffect(() => {
     tapScaleTargetRef.current = isTapBurst ? 1.06 : 1
@@ -334,14 +360,14 @@ function SceneContent({
     () =>
       ships.map((ship, index) => ({
         id: ship.id,
-        radius: 2.15 + index * 0.33,
+        radius: planetRadius + 0.58 + index * 0.34,
         speed: 0.42 + index * 0.14,
         tiltX: 0.45 + index * 0.3,
         spinY: index * 0.92,
         phase: index * 2.2,
         bodyScale: 1 + Math.min(ship.level, 30) * 0.012,
       })),
-    [ships],
+    [planetRadius, ships],
   )
 
   useFrame((state, delta) => {
@@ -389,10 +415,9 @@ function SceneContent({
       const angle = t * orbit.speed * timeScale + orbit.phase
       const x = Math.cos(angle) * orbit.radius
       const z = Math.sin(angle) * orbit.radius
-      const y = Math.sin(angle * 1.35 + orbit.phase) * 0.42
-      sat.position.set(x, y, z)
+      sat.position.set(x, 0, z)
       sat.rotation.y = angle + Math.PI / 2
-      sat.rotation.z = Math.sin(angle * 1.6) * 0.2
+      sat.rotation.z = Math.sin(angle * 1.2) * 0.15
       const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.78, 1.14)
       sat.scale.setScalar(depth)
     }
@@ -418,7 +443,7 @@ function SceneContent({
 
       <group ref={planetGroupRef}>
         <mesh ref={planetRef}>
-          <sphereGeometry args={[1.52, 96, 96]} />
+          <sphereGeometry args={[planetRadius, 96, 96]} />
           <meshPhysicalMaterial
             map={surfaceMap}
             color={theme.base}
@@ -433,11 +458,11 @@ function SceneContent({
           />
         </mesh>
         <mesh rotation={[0, 0, -0.2]}>
-          <sphereGeometry args={[1.53, 64, 64]} />
+          <sphereGeometry args={[planetRadius + 0.01, 64, 64]} />
           <meshStandardMaterial color={theme.cloud} transparent opacity={0.04} roughness={0.55} metalness={0.06} />
         </mesh>
         <mesh ref={cloudsRef} scale={1.055}>
-          <sphereGeometry args={[1.52, 64, 64]} />
+          <sphereGeometry args={[planetRadius, 64, 64]} />
           <meshStandardMaterial
             color={theme.cloud}
             transparent
@@ -448,12 +473,12 @@ function SceneContent({
           />
         </mesh>
         <mesh scale={1.2}>
-          <sphereGeometry args={[1.52, 48, 48]} />
+          <sphereGeometry args={[planetRadius, 48, 48]} />
           <meshBasicMaterial color={theme.ring} transparent opacity={0.16} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
         </mesh>
         {auraActive && (
           <mesh ref={auraRef} scale={1.32}>
-            <sphereGeometry args={[1.52, 30, 30]} />
+            <sphereGeometry args={[planetRadius, 30, 30]} />
             <meshBasicMaterial color="#fde047" transparent opacity={0.12} blending={THREE.AdditiveBlending} />
           </mesh>
         )}
