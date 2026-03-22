@@ -9,6 +9,7 @@ import {
   Engine,
   FresnelParameters,
   HemisphericLight,
+  Matrix,
   MeshBuilder,
   PBRMaterial,
   PointLight,
@@ -226,22 +227,22 @@ export function PlanetSceneBabylon({
     camera.inputs.clear()
 
     const hemi = new HemisphericLight('hemi', new Vector3(0.25, 1, 0.1), scene)
-    hemi.intensity = 0.7
+    hemi.intensity = 0.62
     hemi.groundColor = Color3.FromHexString('#0b1223')
     hemi.diffuse = Color3.FromHexString(theme.cloud)
 
     const key = new DirectionalLight('key', new Vector3(-0.42, -0.62, -0.48), scene)
-    key.intensity = 1.65
+    key.intensity = 1.24
     key.diffuse = Color3.FromHexString('#ffffff')
-    key.specular = Color3.FromHexString('#f8fafc')
+    key.specular = Color3.FromHexString('#dbeafe')
     key.position = new Vector3(3.8, 4.1, 4.5)
 
     const fill = new PointLight('fill', new Vector3(-3.1, -2.4, 1.8), scene)
-    fill.intensity = 0.42
+    fill.intensity = 0.34
     fill.diffuse = Color3.FromHexString(theme.cloud)
 
     const rim = new PointLight('rim', new Vector3(3.2, 2.8, -3.6), scene)
-    rim.intensity = 0.55
+    rim.intensity = 0.38
     rim.diffuse = Color3.FromHexString(theme.ring)
 
     const planetPivot = new TransformNode('planet-pivot', scene)
@@ -251,12 +252,12 @@ export function PlanetSceneBabylon({
     const planetMat = new PBRMaterial('planet-pbr', scene)
     planetMat.albedoTexture = makeAlbedo(scene, theme, planetId.length * 17)
     planetMat.bumpTexture = makeNormalLike(scene, planetId.length * 39)
-    planetMat.metallic = planetId === 'black-hole' ? 0.45 : 0.08
-    planetMat.roughness = planetId === 'ice-world' ? 0.24 : 0.46
+    planetMat.metallic = planetId === 'black-hole' ? 0.42 : 0.06
+    planetMat.roughness = planetId === 'ice-world' ? 0.28 : planetId === 'gas-giant' ? 0.58 : 0.5
     planetMat.clearCoat.isEnabled = true
-    planetMat.clearCoat.intensity = 0.85
-    planetMat.clearCoat.roughness = 0.18
-    planetMat.environmentIntensity = 1.2
+    planetMat.clearCoat.intensity = planetId === 'gas-giant' ? 0.35 : 0.52
+    planetMat.clearCoat.roughness = 0.35
+    planetMat.environmentIntensity = 0.95
     planetMat.emissiveColor = Color3.FromHexString(theme.ring).scale(0.08)
     if (planetId === 'earth-like') {
       planetMat.emissiveTexture = makeCityLights(scene, planetId.length * 91)
@@ -302,45 +303,99 @@ export function PlanetSceneBabylon({
 
     // Orbit lines and satellites
     const satelliteNodes: TransformNode[] = []
-    ships.forEach((ship, index) => {
-      const radius = 1.9 + index * 0.48
+    const orbitProfiles = ships.map((ship, index) => ({
+      id: ship.id,
+      radius: 1.9 + index * 0.48,
+      tiltX: 1.05 - index * 0.22,
+      spinY: index * 0.7,
+      speed: 0.4 + index * 0.12,
+      phase: index * 1.85,
+      reverse: index === 2,
+    }))
+
+    orbitProfiles.forEach((profile, index) => {
       const orbit = MeshBuilder.CreateTorus(
-        `orbit-${ship.id}`,
-        { diameter: radius * 2, thickness: 0.01 + index * 0.002, tessellation: forceLow ? 88 : 140 },
+        `orbit-${profile.id}`,
+        {
+          diameter: profile.radius * 2,
+          thickness: 0.01 + index * 0.002,
+          tessellation: forceLow ? 88 : 140,
+        },
         scene,
       )
-      orbit.rotation.x = 1.05 - index * 0.22
-      orbit.rotation.y = index * 0.7
-      const orbitMat = new StandardMaterial(`orbit-mat-${ship.id}`, scene)
+      orbit.rotation.x = profile.tiltX
+      orbit.rotation.y = profile.spinY
+      const orbitMat = new StandardMaterial(`orbit-mat-${profile.id}`, scene)
       orbitMat.emissiveColor = Color3.FromHexString(theme.orbit).scale(0.75)
       orbitMat.alpha = 0.58
       orbit.material = orbitMat
 
-      const sat = new TransformNode(`sat-${ship.id}`, scene)
-      const body = MeshBuilder.CreateBox(`sat-body-${ship.id}`, { width: 0.16, height: 0.07, depth: 0.13 }, scene)
+      const sat = new TransformNode(`sat-${profile.id}`, scene)
+      sat.rotationQuaternion = null
+
+      const body = MeshBuilder.CreateBox(
+        `sat-body-${profile.id}`,
+        { width: 0.16, height: 0.07, depth: 0.13 },
+        scene,
+      )
       body.parent = sat
-      const bodyMat = new PBRMaterial(`sat-body-mat-${ship.id}`, scene)
+      const bodyMat = new PBRMaterial(`sat-body-mat-${profile.id}`, scene)
       bodyMat.albedoColor = Color3.FromHexString(index === 1 ? '#dbeafe' : '#cbd5e1')
       bodyMat.metallic = 0.92
       bodyMat.roughness = 0.2
       body.material = bodyMat
 
+      const wingL = MeshBuilder.CreateBox(`sat-wing-l-${profile.id}`, { width: 0.1, height: 0.012, depth: 0.04 }, scene)
+      wingL.parent = sat
+      wingL.position.x = -0.12
+      wingL.position.y = 0.01
+      wingL.rotation.z = 0.18
+      const wingR = wingL.clone(`sat-wing-r-${profile.id}`)
+      wingR.parent = sat
+      wingR.position.x = 0.12
+      wingR.rotation.z = -0.18
+
+      const nose = MeshBuilder.CreateCylinder(
+        `sat-nose-${profile.id}`,
+        { height: 0.07, diameterTop: 0.01, diameterBottom: 0.045, tessellation: 10 },
+        scene,
+      )
+      nose.parent = sat
+      nose.position.z = 0.1
+      nose.rotation.x = Math.PI * 0.5
+
+      const cockpit = MeshBuilder.CreateSphere(`sat-cockpit-${profile.id}`, { diameter: 0.045, segments: 12 }, scene)
+      cockpit.parent = sat
+      cockpit.position.set(0, 0.03, 0.02)
+      const cockpitMat = new StandardMaterial(`sat-cockpit-mat-${profile.id}`, scene)
+      cockpitMat.emissiveColor = Color3.FromHexString('#7dd3fc').scale(0.55)
+      cockpitMat.alpha = 0.82
+      cockpit.material = cockpitMat
+
       const engineFlame = MeshBuilder.CreateCylinder(
-        `sat-flame-${ship.id}`,
+        `sat-flame-${profile.id}`,
         { diameterTop: 0.015, diameterBottom: 0.06, height: 0.28, tessellation: 10 },
         scene,
       )
       engineFlame.parent = sat
       engineFlame.position.z = -0.16
       engineFlame.rotation.x = Math.PI * 0.5
-      const flameMat = new StandardMaterial(`sat-flame-mat-${ship.id}`, scene)
+      const flameMat = new StandardMaterial(`sat-flame-mat-${profile.id}`, scene)
       flameMat.emissiveColor = Color3.FromHexString(index === 2 ? '#f97316' : '#22d3ee')
       flameMat.alpha = 0.72
       flameMat.disableLighting = true
       engineFlame.material = flameMat
 
+      const engineCore = MeshBuilder.CreateSphere(`sat-engine-core-${profile.id}`, { diameter: 0.03, segments: 8 }, scene)
+      engineCore.parent = sat
+      engineCore.position.z = -0.11
+      const engineCoreMat = new StandardMaterial(`sat-engine-core-mat-${profile.id}`, scene)
+      engineCoreMat.emissiveColor = Color3.FromHexString(index === 2 ? '#fb923c' : '#67e8f9').scale(0.9)
+      engineCoreMat.disableLighting = true
+      engineCore.material = engineCoreMat
+
       satelliteNodes.push(sat)
-      sat.metadata = { radius, phase: index * 1.85, speed: 0.4 + index * 0.12, reverse: index === 2 }
+      sat.metadata = profile
     })
 
     // Comets for living space feel
@@ -416,11 +471,20 @@ export function PlanetSceneBabylon({
         const phase: number = sat.metadata.phase
         const speed: number = sat.metadata.speed
         const reverse: boolean = sat.metadata.reverse
-        const angle = t * speed * (reverse ? -1 : 1) + phase
-        const x = Math.cos(angle) * radius
-        const z = Math.sin(angle) * radius
-        sat.position.set(x, 0, z)
-        sat.rotation.y = Math.atan2(Math.cos(angle), -Math.sin(angle))
+        const tiltX: number = sat.metadata.tiltX
+        const spinY: number = sat.metadata.spinY
+        const dir = reverse ? -1 : 1
+        const angle = t * speed * dir + phase
+        const local = new Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius)
+        const localTangent = new Vector3(-Math.sin(angle) * radius * dir, 0, Math.cos(angle) * radius * dir)
+        const orbitMatrix = Matrix.RotationYawPitchRoll(spinY, tiltX, 0)
+        const worldPos = Vector3.TransformCoordinates(local, orbitMatrix)
+        const worldTan = Vector3.TransformNormal(localTangent, orbitMatrix).normalize()
+        sat.position.copyFrom(worldPos)
+        const horizontal = Math.sqrt(worldTan.x * worldTan.x + worldTan.z * worldTan.z)
+        sat.rotation.y = Math.atan2(worldTan.x, worldTan.z)
+        sat.rotation.x = -Math.atan2(worldTan.y, Math.max(0.0001, horizontal)) * 0.45
+        sat.rotation.z = 0
       }
 
       for (const comet of cometNodes) {
