@@ -178,6 +178,12 @@ body {
 .planet-stage {
   --planet-size: min(300px, 64vw);
   --orbit-outer-size: min(470px, 96vw);
+  --cam-rotate-x: 0deg;
+  --cam-rotate-y: 0deg;
+  --cam-shift-x: 0px;
+  --cam-shift-y: 0px;
+  --cam-orbit-tilt: 62deg;
+  --cam-orbit-counter: -62deg;
   position: relative;
   width: min(100%, 520px);
   height: var(--orbit-outer-size);
@@ -186,6 +192,21 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  perspective: 1100px;
+}
+
+.planet-camera-rig {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-style: preserve-3d;
+  transform:
+    translate3d(var(--cam-shift-x), var(--cam-shift-y), 0)
+    rotateX(var(--cam-rotate-x))
+    rotateY(var(--cam-rotate-y));
 }
 
 .planet-core {
@@ -201,6 +222,7 @@ body {
     0 0 68px rgba(34, 211, 238, 0.28),
     inset 0 -16px 30px rgba(2, 6, 23, 0.33);
   isolation: isolate;
+  transform: translateZ(24px);
 }
 
 .planet-core::before {
@@ -426,7 +448,7 @@ body {
   width: var(--orbit-outer-size);
   height: var(--orbit-outer-size);
   pointer-events: none;
-  transform: rotateX(64deg);
+  transform: rotateX(var(--cam-orbit-tilt));
   transform-style: preserve-3d;
   animation: orbitPrecession 22s linear infinite;
 }
@@ -461,7 +483,7 @@ body {
   position: absolute;
   top: -2px;
   left: 50%;
-  transform: translate(-50%, -50%) rotateX(-64deg) scale(var(--ship-scale, 1));
+  transform: translate(-50%, -50%) rotateX(var(--cam-orbit-counter)) scale(var(--ship-scale, 1));
   display: inline-flex;
   gap: 4px;
   align-items: center;
@@ -498,10 +520,10 @@ body {
 
 @keyframes orbitPrecession {
   from {
-    transform: rotateX(64deg) rotateZ(0deg);
+    transform: rotateX(var(--cam-orbit-tilt)) rotateZ(0deg);
   }
   to {
-    transform: rotateX(64deg) rotateZ(360deg);
+    transform: rotateX(var(--cam-orbit-tilt)) rotateZ(360deg);
   }
 }
 
@@ -719,6 +741,7 @@ body {
 .reduced-fx .planet-rotation-layer,
 .reduced-fx .planet-cloud-layer,
 .reduced-fx .ship-ring,
+.reduced-fx .planet-camera-rig,
 .reduced-fx .planet-transition,
 .reduced-fx .particle,
 .reduced-fx .screen-shake,
@@ -737,10 +760,20 @@ body {
   .planet-rotation-layer,
   .planet-cloud-layer,
   .ship-ring,
+  .planet-camera-rig,
   .planet-transition,
   .particle,
   .screen-shake,
   .screen-flash {
     animation: none !important;
+  }
+
+  .planet-stage {
+    --cam-rotate-x: 0deg;
+    --cam-rotate-y: 0deg;
+    --cam-shift-x: 0px;
+    --cam-shift-y: 0px;
+    --cam-orbit-tilt: 62deg;
+    --cam-orbit-counter: -62deg;
   }
 }
