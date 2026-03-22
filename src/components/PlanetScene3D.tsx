@@ -663,7 +663,6 @@ function SceneContent({
   const prevVelocityRefs = useRef<Array<THREE.Vector3>>([])
   const bankRefs = useRef<number[]>([])
   const pitchRefs = useRef<number[]>([])
-  const lookHelperRef = useRef(new THREE.Object3D())
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
   const tapScaleTargetRef = useRef(1)
   const theme = THEMES[planetId] ?? THEMES['earth-like']
@@ -778,15 +777,24 @@ function SceneContent({
       const safeDelta = Math.max(delta, 0.0001)
       const timeScale = reducedMotion ? 0.3 : 1
       const direction = orbit.reverse ? -1 : 1
-      const anomaly = t * orbit.speed * timeScale * direction + orbit.phase
-      const theta = anomaly + orbit.periapsis
+      const theta = t * orbit.speed * timeScale + orbit.phase
       const ecc = orbit.eccentricity
-      const radius =
-        (orbit.radius * (1 - ecc * ecc)) /
-        Math.max(0.58, 1 + ecc * Math.cos(theta))
-      const x = Math.cos(theta) * radius
-      const z = Math.sin(theta) * radius
+      const ellipseScale = 1 - ecc * 0.32
+      const orbitalTheta = theta * direction
+      const cosT = Math.cos(orbitalTheta)
+      const sinT = Math.sin(orbitalTheta)
+      const a = orbit.radius
+      const b = orbit.radius * ellipseScale
+      const x0 = cosT * a
+      const z0 = sinT * b
+      const cosP = Math.cos(orbit.periapsis)
+      const sinP = Math.sin(orbit.periapsis)
+      const x = x0 * cosP - z0 * sinP
+      const z = x0 * sinP + z0 * cosP
       sat.position.set(x, 0, z)
+
+      const tangentX = (-sinT * a * cosP - cosT * b * sinP) * direction
+      const tangentZ = (-sinT * a * sinP + cosT * b * cosP) * direction
 
       const prevPos = prevPosRefs.current[i] ?? new THREE.Vector3(x, 0, z)
       const instVelocity = new THREE.Vector3(
@@ -802,11 +810,14 @@ function SceneContent({
       velRef.lerp(instVelocity, 1 - Math.exp(-safeDelta * 10))
       const speedMag = velRef.length()
       if (speedMag > 0.0001) {
-        const forward = velRef.clone().normalize()
-        const lookTarget = lookHelperRef.current
-        lookTarget.position.set(x, 0, z)
-        lookTarget.lookAt(x + forward.x, 0, z + forward.z)
-        sat.quaternion.slerp(lookTarget.quaternion, 1 - Math.exp(-safeDelta * orbit.yawDamping))
+        const forward = new THREE.Vector3(tangentX, 0, tangentZ).normalize()
+        const targetYaw = Math.atan2(forward.x, forward.z)
+        const currentYaw = sat.rotation.y
+        const yawDiff = Math.atan2(
+          Math.sin(targetYaw - currentYaw),
+          Math.cos(targetYaw - currentYaw),
+        )
+        sat.rotation.y = currentYaw + yawDiff * (1 - Math.exp(-safeDelta * orbit.yawDamping))
 
         if (model) {
           const acceleration = velRef.clone().sub(prevVel).divideScalar(safeDelta)
@@ -924,10 +935,8 @@ function SceneContent({
               ref={(node: THREE.Group | null) => (modelRefs.current[index] = node)}
               scale={orbit.bodyScale}
             >
-              <group rotation={[0, Math.PI, 0]}>
-                <ShipModel shipId={orbit.id} ringColor={theme.ring} />
-              </group>
-              <mesh position={[0, -0.02, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+              <ShipModel shipId={orbit.id} ringColor={theme.ring} />
+              <mesh position={[0, -0.02, -0.22]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.032, 0.12, 0.56, 12, 1, true]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -937,7 +946,7 @@ function SceneContent({
                   blending={THREE.AdditiveBlending}
                 />
               </mesh>
-              <mesh position={[0, -0.02, 0.44]} rotation={[Math.PI / 2, 0, 0]}>
+              <mesh position={[0, -0.02, -0.44]} rotation={[Math.PI / 2, 0, 0]}>
                 <cylinderGeometry args={[0.018, 0.08, 0.48, 10, 1, true]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -947,7 +956,7 @@ function SceneContent({
                   blending={THREE.AdditiveBlending}
                 />
               </mesh>
-              <mesh position={[0, 0.02, 0.38]}>
+              <mesh position={[0, 0.02, -0.38]}>
                 <sphereGeometry args={[0.08, 14, 14]} />
                 <meshBasicMaterial
                   color={orbit.trailColor}
@@ -958,7 +967,7 @@ function SceneContent({
                 />
               </mesh>
               <pointLight
-                position={[0, 0.02, 0.16]}
+                position={[0, 0.02, -0.16]}
                 intensity={0.34}
                 color={orbit.trailColor}
                 distance={1.6}
