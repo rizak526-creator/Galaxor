@@ -55,6 +55,7 @@ export function PlanetMap({
   const planetRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
   const [planetTransition, setPlanetTransition] = useState(false)
+  const [planetCaptionVisible, setPlanetCaptionVisible] = useState(false)
   const cameraTargetRef = useRef({ x: 0, y: 0 })
   const lastInputAtRef = useRef(0)
   const reducedMotion =
@@ -66,6 +67,12 @@ export function PlanetMap({
   useEffect(() => {
     setPlanetTransition(true)
     const timer = window.setTimeout(() => setPlanetTransition(false), 320)
+    return () => window.clearTimeout(timer)
+  }, [activePlanetId])
+
+  useEffect(() => {
+    setPlanetCaptionVisible(true)
+    const timer = window.setTimeout(() => setPlanetCaptionVisible(false), 700)
     return () => window.clearTimeout(timer)
   }, [activePlanetId])
 
@@ -145,6 +152,12 @@ export function PlanetMap({
                 reducedMotion={reducedMotion}
               />
             </Suspense>
+            {planetCaptionVisible && (
+              <div className="planet-cinematic-caption">
+                <p>{activePlanet.name}</p>
+                <span>{activePlanet.subtitle}</span>
+              </div>
+            )}
           </div>
 
           <div

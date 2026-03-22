@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { init, miniApp, retrieveLaunchParams, viewport } from '@tma.js/sdk'
 import { TonConnectButton, useTonAddress } from '@tonconnect/ui-react'
 import type { AsteroidParticle } from './components/Asteroid'
@@ -34,6 +34,9 @@ const LazyArtifactGallery = lazy(() =>
 )
 const LazyAIPanel = lazy(() =>
   import('./components/AIPanel').then((module) => ({ default: module.AIPanel })),
+)
+const LazyCommandCenter = lazy(() =>
+  import('./components/CommandCenter').then((module) => ({ default: module.CommandCenter })),
 )
 const LazyPlanetScene3D = lazy(() =>
   import('./components/PlanetScene3D').then((module) => ({ default: module.PlanetScene3D })),
@@ -89,6 +92,18 @@ type SaveData = {
     epochSet: boolean
     fullSet: boolean
   }
+  factionRep: {
+    union: number
+    syndicate: number
+    keepers: number
+  }
+  storyIndex: number
+  storyHistory: string[]
+  passPremium: boolean
+  passClaimedFree: number[]
+  passClaimedPremium: number[]
+  cosmeticsOwned: string[]
+  uiDensity: 'compact' | 'comfortable'
 }
 
 type ToastType = 'info' | 'success'
@@ -100,6 +115,7 @@ type TabType =
   | 'expeditions'
   | 'artifacts'
   | 'history'
+  | 'command'
   | 'ai'
 
 const PASSIVE_TICK_MS = BALANCE.tick.passiveMs
@@ -233,6 +249,103 @@ const CHAPTERS = [
     title: 'Глава 5: Stellar Dominion',
     story: 'Империя входит в эпоху звёздного господства. Осталось удержать баланс сил.',
     voiceLine: 'ИИ-коммандер: Звёздное господство достигнуто. Командование в твоих руках.',
+  },
+] as const
+
+const STORY_OPS = [
+  {
+    id: 'rift-caravan',
+    title: 'Рифт-караван',
+    description: 'Торговцы застряли на границе рифта и просят сопровождение.',
+    choices: [
+      {
+        id: 'escort',
+        title: 'Дать эскорт',
+        outcome: '+180 крист., +8 репутации Союза',
+        crystals: 180,
+        stardust: 0,
+        rep: { union: 8, syndicate: -2, keepers: 1 },
+      },
+      {
+        id: 'tax',
+        title: 'Взять пошлину',
+        outcome: '+70 крист., +3 пыли, +8 репутации Синдиката',
+        crystals: 70,
+        stardust: 3,
+        rep: { union: -3, syndicate: 8, keepers: 0 },
+      },
+    ],
+  },
+  {
+    id: 'ancient-signal',
+    title: 'Сигнал Предтеч',
+    description: 'Из руин поступает шифр с координатами скрытого хранилища.',
+    choices: [
+      {
+        id: 'research',
+        title: 'Передать Хранителям',
+        outcome: '+4 энергии, +7 репутации Хранителей',
+        crystals: 0,
+        stardust: 2,
+        energy: 4,
+        rep: { union: 0, syndicate: -2, keepers: 7 },
+      },
+      {
+        id: 'raid',
+        title: 'Штурмовать сразу',
+        outcome: '+260 крист., но -4 репутации Хранителей',
+        crystals: 260,
+        stardust: 0,
+        rep: { union: 1, syndicate: 3, keepers: -4 },
+      },
+    ],
+  },
+  {
+    id: 'starport-strike',
+    title: 'Забастовка доков',
+    description: 'Верфи остановили производство. Нужно принять сторону.',
+    choices: [
+      {
+        id: 'support-workers',
+        title: 'Поддержать рабочих',
+        outcome: '+6 энергии, +6 Союз, -2 Синдикат',
+        crystals: 90,
+        stardust: 0,
+        energy: 6,
+        rep: { union: 6, syndicate: -2, keepers: 0 },
+      },
+      {
+        id: 'support-owners',
+        title: 'Поддержать владельцев',
+        outcome: '+240 крист., +6 Синдикат',
+        crystals: 240,
+        stardust: 0,
+        rep: { union: -3, syndicate: 6, keepers: 0 },
+      },
+    ],
+  },
+] as const
+
+const PASS_MILESTONES = [1, 3, 5, 7, 10, 13, 16] as const
+
+const COSMETIC_CATALOG = [
+  {
+    id: 'orbit-aurora',
+    name: 'Аурора орбит',
+    price: 14,
+    description: 'Более яркие орбитальные следы и мягкий glow.',
+  },
+  {
+    id: 'captain-title',
+    name: 'Титул "Звёздный Архонт"',
+    price: 18,
+    description: 'Косметический титул в профиле пилота.',
+  },
+  {
+    id: 'hud-crystal',
+    name: 'Кристаллический HUD',
+    price: 24,
+    description: 'Новый визуальный стиль интерфейса в холодных тонах.',
   },
 ] as const
 
@@ -420,6 +533,18 @@ function App() {
   const [isTapBurst, setIsTapBurst] = useState(false)
   const [tapBurstTick, setTapBurstTick] = useState(0)
   const [particles, setParticles] = useState<AsteroidParticle[]>([])
+  const [factionRep, setFactionRep] = useState({
+    union: 0,
+    syndicate: 0,
+    keepers: 0,
+  })
+  const [storyIndex, setStoryIndex] = useState(0)
+  const [storyHistory, setStoryHistory] = useState<string[]>([])
+  const [passPremium, setPassPremium] = useState(false)
+  const [passClaimedFree, setPassClaimedFree] = useState<number[]>([])
+  const [passClaimedPremium, setPassClaimedPremium] = useState<number[]>([])
+  const [cosmeticsOwned, setCosmeticsOwned] = useState<string[]>([])
+  const [uiDensity, setUiDensity] = useState<'compact' | 'comfortable'>('comfortable')
   const [toast, setToast] = useState<{ text: string; type: ToastType } | null>(
     null,
   )
@@ -470,6 +595,30 @@ function App() {
 
   const activePlanet =
     planets.find((planet) => planet.id === currentPlanetId) ?? planets[0]
+  const starterPlanetId = 'gas-giant'
+  const starterSceneShips: FleetShip[] = useMemo(
+    () => [
+      {
+        id: 'mining-drone',
+        name: 'Bronze Escort',
+        icon: `${ASSET_BASE}assets/ships/mining-drone.svg`,
+        level: 4,
+      },
+      {
+        id: 'explorer-scout',
+        name: 'Bronze Scout',
+        icon: `${ASSET_BASE}assets/ships/explorer-scout.svg`,
+        level: 3,
+      },
+      {
+        id: 'harvester-probe',
+        name: 'Bronze Relay',
+        icon: `${ASSET_BASE}assets/ships/harvester-probe.svg`,
+        level: 2,
+      },
+    ],
+    [],
+  )
   const unlockedPlanets = planets.filter((planet) => planet.unlocked)
   const hasFullArtifactSet = artifactCollection.length >= ARTIFACTS_POOL.length
   const artifactPassiveBonus = artifactCollection.includes('core-lens') ? 0.2 : 0
@@ -569,6 +718,20 @@ function App() {
   const nextLevelBase = Math.pow(level, 2) * BALANCE.level.divisor
   const levelProgress = Math.max(0, totalEarned - levelFloorBase)
   const levelProgressTotal = Math.max(1, nextLevelBase - levelFloorBase)
+  const passPoints = Math.floor(totalEarned / 400) + Math.floor(tapCount / 40) + level * 2
+  const passTier = Math.min(
+    PASS_MILESTONES.length,
+    PASS_MILESTONES.filter((point) => passPoints >= point * 10).length,
+  )
+  const activeStoryOp = STORY_OPS[storyIndex % STORY_OPS.length]
+  const nextBestAction: { text: string; tab: TabType } =
+    canClaimDaily
+      ? { text: 'Забрать ежедневный бонус и ускорить прогресс.', tab: 'missions' }
+      : stardust >= 14
+        ? { text: 'Потратить пыль на косметику или премиум в командном центре.', tab: 'command' }
+        : crystals >= costTap
+          ? { text: 'Усилить тап в магазине для быстрого буста.', tab: 'shop' }
+          : { text: 'Запусти экспедицию, чтобы накопить ресурсы оффлайн.', tab: 'expeditions' }
 
   const showToast = (text: string, type: ToastType = 'info') => {
     setToast({ text, type })
@@ -629,6 +792,84 @@ function App() {
     )
   }
 
+  const applyStoryChoice = (choiceId: string) => {
+    const picked = activeStoryOp.choices.find((choice) => choice.id === choiceId)
+    if (!picked) return
+    if (picked.crystals) {
+      setCrystals((prev) => prev + picked.crystals)
+      setTotalEarned((prev) => prev + picked.crystals)
+    }
+    const stardustGain = picked.stardust ?? 0
+    const energyGain = 'energy' in picked ? picked.energy ?? 0 : 0
+    if (stardustGain) setStardust((prev) => prev + stardustGain)
+    if (energyGain) setEnergy((prev) => prev + energyGain)
+    setFactionRep((prev) => ({
+      union: prev.union + (picked.rep.union ?? 0),
+      syndicate: prev.syndicate + (picked.rep.syndicate ?? 0),
+      keepers: prev.keepers + (picked.rep.keepers ?? 0),
+    }))
+    setStoryHistory((prev) =>
+      [`${activeStoryOp.title}: ${picked.title} (${picked.outcome})`, ...prev].slice(0, 18),
+    )
+    pushHistory(`Сценарий: ${activeStoryOp.title} -> ${picked.title}`)
+    showToast(`Решение принято: ${picked.title}`, 'success')
+    setStoryIndex((prev) => prev + 1)
+  }
+
+  const unlockPremiumPass = () => {
+    if (passPremium) return
+    const cost = 25
+    if (stardust < cost) {
+      showToast('Недостаточно звёздной пыли для Премиум-пропуска', 'info')
+      return
+    }
+    setStardust((prev) => prev - cost)
+    setPassPremium(true)
+    pushHistory('Разблокирован Премиум-пропуск')
+    showToast('Премиум-пропуск активирован', 'success')
+  }
+
+  const claimPassReward = (tier: number, premium: boolean) => {
+    if (tier > passTier) {
+      showToast('Этот уровень пропуска ещё не открыт', 'info')
+      return
+    }
+    if (premium) {
+      if (!passPremium) {
+        showToast('Сначала активируй Премиум-пропуск', 'info')
+        return
+      }
+      if (passClaimedPremium.includes(tier)) return
+      setPassClaimedPremium((prev) => [...prev, tier])
+      setStardust((prev) => prev + 2 + tier)
+      setCrystals((prev) => prev + tier * 60)
+      setTotalEarned((prev) => prev + tier * 60)
+      pushHistory(`Получена премиум-награда пропуска: уровень ${tier}`)
+      showToast(`Премиум-награда уровня ${tier} получена`, 'success')
+      return
+    }
+
+    if (passClaimedFree.includes(tier)) return
+    setPassClaimedFree((prev) => [...prev, tier])
+    setCrystals((prev) => prev + tier * 40)
+    setTotalEarned((prev) => prev + tier * 40)
+    if (tier % 2 === 0) setEnergy((prev) => prev + 2)
+    pushHistory(`Получена бесплатная награда пропуска: уровень ${tier}`)
+    showToast(`Награда уровня ${tier} получена`, 'success')
+  }
+
+  const buyCosmetic = (cosmeticId: string, price: number) => {
+    if (cosmeticsOwned.includes(cosmeticId)) return
+    if (stardust < price) {
+      showToast('Не хватает звёздной пыли', 'info')
+      return
+    }
+    setStardust((prev) => prev - price)
+    setCosmeticsOwned((prev) => [...prev, cosmeticId])
+    pushHistory(`Куплена косметика: ${cosmeticId}`)
+    showToast('Косметика приобретена', 'success')
+  }
+
   useEffect(() => {
     const cleanupHandlers: VoidFunction[] = []
     try {
@@ -677,7 +918,7 @@ function App() {
         if (!saved) return planet
         return {
           ...planet,
-          unlocked: saved.unlocked ?? planet.unlocked,
+          unlocked: true,
         }
       })
       const baseShips = SHIPS_TEMPLATE.map((ship) => {
@@ -702,6 +943,14 @@ function App() {
       const baseMiniGameDifficultyByPlanet =
         parsed.miniGameDifficultyByPlanet ?? {}
       const baseSetBonuses = parsed.setBonuses ?? { epochSet: false, fullSet: false }
+      const baseFactionRep = parsed.factionRep ?? { union: 0, syndicate: 0, keepers: 0 }
+      const baseStoryIndex = parsed.storyIndex ?? 0
+      const baseStoryHistory = parsed.storyHistory ?? []
+      const basePassPremium = parsed.passPremium ?? false
+      const basePassClaimedFree = parsed.passClaimedFree ?? []
+      const basePassClaimedPremium = parsed.passClaimedPremium ?? []
+      const baseCosmeticsOwned = parsed.cosmeticsOwned ?? []
+      const baseUiDensity = parsed.uiDensity === 'compact' ? 'compact' : 'comfortable'
 
       const elapsed = Math.max(0, Math.min(Date.now() - baseLastSeen, MAX_OFFLINE_MS))
       let savedPassiveSum = 0
@@ -754,6 +1003,14 @@ function App() {
       setMiniGameCooldownUntil(baseMiniGameCooldownUntil)
       setMiniGameDifficultyByPlanet(baseMiniGameDifficultyByPlanet)
       setSetBonuses(baseSetBonuses)
+      setFactionRep(baseFactionRep)
+      setStoryIndex(baseStoryIndex)
+      setStoryHistory(baseStoryHistory)
+      setPassPremium(basePassPremium)
+      setPassClaimedFree(basePassClaimedFree)
+      setPassClaimedPremium(basePassClaimedPremium)
+      setCosmeticsOwned(baseCosmeticsOwned)
+      setUiDensity(baseUiDensity)
 
       if (offlineCrystals > 0 || offlineEnergy > 0) {
         showToast(
@@ -769,11 +1026,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const effectiveLevel = level + explorerLevel * 2
     setPlanets((prev) =>
       prev.map((planet) => ({
         ...planet,
-        unlocked: planet.unlocked || effectiveLevel >= planet.unlockLevel,
+        unlocked: true,
       })),
     )
   }, [level, explorerLevel])
@@ -977,6 +1233,14 @@ function App() {
       miniGameCooldownUntil,
       miniGameDifficultyByPlanet,
       setBonuses,
+      factionRep,
+      storyIndex,
+      storyHistory,
+      passPremium,
+      passClaimedFree,
+      passClaimedPremium,
+      cosmeticsOwned,
+      uiDensity,
     }
     window.localStorage.setItem('galaxor_save', JSON.stringify(saveData))
   }, [
@@ -1007,6 +1271,14 @@ function App() {
     miniGameCooldownUntil,
     miniGameDifficultyByPlanet,
     setBonuses,
+    factionRep,
+    storyIndex,
+    storyHistory,
+    passPremium,
+    passClaimedFree,
+    passClaimedPremium,
+    cosmeticsOwned,
+    uiDensity,
   ])
 
   useEffect(() => {
@@ -1447,7 +1719,7 @@ function App() {
     <main
       className={`space-bg chapter-${currentChapter} min-h-[100svh] w-full px-4 py-6 text-white sm:px-6 ${
         reducedEffects ? 'reduced-fx' : ''
-      }`}
+      } ${uiDensity === 'compact' ? 'ui-compact' : ''}`}
     >
       <section
         className={`relative mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-5xl flex-col rounded-3xl border border-white/10 bg-slate-950/40 p-5 backdrop-blur-xl shadow-[0_0_90px_rgba(20,130,255,0.2)] sm:p-8 ${
@@ -1502,8 +1774,8 @@ function App() {
                   }
                 >
                   <LazyPlanetScene3D
-                    planetId={currentPlanetId}
-                    ships={ships}
+                    planetId={starterPlanetId}
+                    ships={starterSceneShips}
                     auraActive={false}
                     isTapBurst={isTapBurst}
                     tapBurstTick={tapBurstTick}
@@ -1563,6 +1835,22 @@ function App() {
               chapterTitle={activeChapter.title}
             />
 
+            <section className="rounded-2xl border border-cyan-300/15 bg-slate-900/35 p-4">
+              <p className="text-xs uppercase tracking-wide text-cyan-200/80">
+                Следующий лучший шаг
+              </p>
+              <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-200">{nextBestAction.text}</p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(nextBestAction.tab)}
+                  className="rounded-lg border border-cyan-300/30 bg-cyan-400/20 px-3 py-1.5 text-xs font-semibold text-cyan-100 hover:bg-cyan-400/30"
+                >
+                  Перейти
+                </button>
+              </div>
+            </section>
+
             <PlanetMap
               planets={planets}
               activePlanetId={currentPlanetId}
@@ -1587,7 +1875,7 @@ function App() {
               onReward={handleMiniGameReward}
             />
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-900/50 p-2 md:grid-cols-8">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-900/50 p-2 md:grid-cols-9">
               <button
                 type="button"
                 onClick={() => setActiveTab('shop')}
@@ -1636,6 +1924,13 @@ function App() {
                 className={`tab-btn ${activeTab === 'history' ? 'tab-btn-active' : ''}`}
               >
                 История
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('command')}
+                className={`tab-btn ${activeTab === 'command' ? 'tab-btn-active' : ''}`}
+              >
+                Командный центр
               </button>
               <button
                 type="button"
@@ -1760,6 +2055,42 @@ function App() {
                     )}
                   </div>
                 </section>
+              )}
+
+              {activeTab === 'command' && (
+                <LazyCommandCenter
+                  factionRep={factionRep}
+                  storyTitle={activeStoryOp.title}
+                  storyDescription={activeStoryOp.description}
+                  storyChoices={activeStoryOp.choices.map((choice) => ({
+                    id: choice.id,
+                    title: choice.title,
+                    outcome: choice.outcome,
+                  }))}
+                  onChooseStory={applyStoryChoice}
+                  storyHistory={storyHistory}
+                  passTier={passTier}
+                  passMilestones={[...PASS_MILESTONES]}
+                  passPremium={passPremium}
+                  passClaimedFree={passClaimedFree}
+                  passClaimedPremium={passClaimedPremium}
+                  passPoints={passPoints}
+                  onUnlockPremium={unlockPremiumPass}
+                  onClaimFree={(tier: number) => claimPassReward(tier, false)}
+                  onClaimPremium={(tier: number) => claimPassReward(tier, true)}
+                  stardust={stardust}
+                  cosmetics={COSMETIC_CATALOG.map((item) => ({
+                    ...item,
+                    owned: cosmeticsOwned.includes(item.id),
+                  }))}
+                  onBuyCosmetic={buyCosmetic}
+                  uiDensity={uiDensity}
+                  onToggleUiDensity={() =>
+                    setUiDensity((prev) =>
+                      prev === 'compact' ? 'comfortable' : 'compact',
+                    )
+                  }
+                />
               )}
 
               {activeTab === 'ai' && (
