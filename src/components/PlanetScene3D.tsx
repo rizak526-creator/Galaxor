@@ -668,7 +668,7 @@ function SceneContent({
         bodyScale:
           (getOrbitProfile(ship.id, index, planetRadius).bodyScale +
             Math.min(ship.level, 30) * 0.018) *
-          0.5,
+          0.35,
       })),
     [planetRadius, ships],
   )
@@ -754,7 +754,7 @@ function SceneContent({
       const z = Math.sin(angle) * orbit.radius
       sat.position.set(x, 0, z)
       sat.rotation.y = angle + Math.PI / 2
-      sat.rotation.z = Math.sin(angle * 1.2) * 0.15
+      sat.rotation.z = 0
       const depth = THREE.MathUtils.mapLinear(z, -orbit.radius, orbit.radius, 0.78, 1.14)
       sat.scale.setScalar(depth)
     }
