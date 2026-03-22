@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import {
   ArcRotateCamera,
   Color3,
@@ -871,6 +871,21 @@ export function PlanetSceneBabylon({
     if (value === 'low' || value === 'high' || value === 'auto') return value
     return 'auto'
   }, [])
+  const [qualityPreset, setQualityPreset] = useState<'low' | 'high'>(() =>
+    qualityMode === 'low' ? 'low' : 'high',
+  )
+
+  useEffect(() => {
+    if (qualityMode === 'low') {
+      setQualityPreset('low')
+      return
+    }
+    if (qualityMode === 'high') {
+      setQualityPreset('high')
+      return
+    }
+    setQualityPreset('high')
+  }, [qualityMode])
 
   useEffect(() => {
     tapVelocityRef.current += reducedMotion ? 0.22 : 0.38
@@ -886,14 +901,17 @@ export function PlanetSceneBabylon({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const forceLow = reducedMotion || qualityMode === 'low'
-    const engine = new Engine(canvas, !forceLow, {
+    const forceLow = qualityPreset === 'low'
+    const deviceDpr =
+      typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2.2) : 1
+    const highScale = Math.max(0.45, 1 / deviceDpr)
+    const lowScale = Math.min(1.12, highScale * 1.7)
+    const engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
       disableWebGL2Support: false,
       powerPreference: 'high-performance',
     })
-    if (forceLow) engine.setHardwareScalingLevel(1.4)
     engineRef.current = engine
 
     const scene = new Scene(engine)
@@ -903,6 +921,11 @@ export function PlanetSceneBabylon({
     const theme = THEMES[planetId] ?? THEMES['earth-like']
     const planetSeed = hashPlanetId(planetId)
     const isMobileViewport = engine.getRenderWidth() < 700
+    if (forceLow) {
+      engine.setHardwareScalingLevel(isMobileViewport ? lowScale : Math.min(1.2, lowScale + 0.12))
+    } else {
+      engine.setHardwareScalingLevel(isMobileViewport ? highScale : Math.max(0.85, highScale))
+    }
     const baseCameraRadius = isMobileViewport ? 8.8 : 7.2
     const camera = new ArcRotateCamera('planet-camera', Math.PI * 0.5, Math.PI * 0.48, baseCameraRadius, Vector3.Zero(), scene)
     camera.lowerRadiusLimit = isMobileViewport ? 8.2 : 6.8
@@ -1156,8 +1179,9 @@ export function PlanetSceneBabylon({
       star.position.copyFrom(pos)
     }
 
+    let pipeline: DefaultRenderingPipeline | null = null
     if (!forceLow) {
-      const pipeline = new DefaultRenderingPipeline('planet-pipeline', true, scene, [camera])
+      pipeline = new DefaultRenderingPipeline('planet-pipeline', true, scene, [camera])
       pipeline.samples = 1
       pipeline.fxaaEnabled = true
       pipeline.bloomEnabled = true
@@ -1173,9 +1197,54 @@ export function PlanetSceneBabylon({
       pipeline.imageProcessing.vignetteColor = new Color4(0.01, 0.02, 0.08, 1)
     }
 
+    const fpsProbe = {
+      elapsed: 0,
+      frames: 0,
+      lowStreak: 0,
+      highStreak: 0,
+      applied: forceLow ? 'low' : 'high' as 'low' | 'high',
+    }
+
     scene.onBeforeRenderObservable.add(() => {
       const dt = engine.getDeltaTime() / 1000
       const t = performance.now() * 0.001
+
+      if (qualityMode === 'auto') {
+        fpsProbe.elapsed += dt
+        fpsProbe.frames += 1
+        if (fpsProbe.elapsed >= 1) {
+          const fps = fpsProbe.frames / Math.max(0.001, fpsProbe.elapsed)
+          fpsProbe.elapsed = 0
+          fpsProbe.frames = 0
+          if (fps < 38) {
+            fpsProbe.lowStreak += 1
+            fpsProbe.highStreak = 0
+          } else if (fps > 52) {
+            fpsProbe.highStreak += 1
+            fpsProbe.lowStreak = 0
+          } else {
+            fpsProbe.lowStreak = 0
+            fpsProbe.highStreak = 0
+          }
+
+          if (fpsProbe.lowStreak >= 2 && fpsProbe.applied !== 'low') {
+            fpsProbe.applied = 'low'
+            engine.setHardwareScalingLevel(isMobileViewport ? lowScale : Math.min(1.2, lowScale + 0.12))
+            if (pipeline) {
+              pipeline.fxaaEnabled = false
+              pipeline.bloomEnabled = false
+            }
+          } else if (fpsProbe.highStreak >= 3 && fpsProbe.applied !== 'high') {
+            fpsProbe.applied = 'high'
+            engine.setHardwareScalingLevel(isMobileViewport ? highScale : Math.max(0.85, highScale))
+            if (pipeline) {
+              pipeline.fxaaEnabled = true
+              pipeline.bloomEnabled = true
+            }
+          }
+        }
+      }
+
       const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight())
       const targetRadius = baseCameraRadius + Math.max(0, (1.15 - aspect) * 1.7)
       camera.radius += (targetRadius - camera.radius) * 0.06
@@ -1264,7 +1333,7 @@ export function PlanetSceneBabylon({
       sceneRef.current = null
       engineRef.current = null
     }
-  }, [auraActive, lastInputAtRef, planetId, pointerRef, qualityMode, reducedMotion, ships])
+  }, [auraActive, lastInputAtRef, planetId, pointerRef, qualityMode, qualityPreset, reducedMotion, ships])
 
   return <canvas ref={canvasRef} className="planet-canvas" />
 }
