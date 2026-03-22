@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { init, miniApp, retrieveLaunchParams, viewport } from '@tma.js/sdk'
 import { TonConnectButton, useTonAddress } from '@tonconnect/ui-react'
 import { type AsteroidParticle } from './components/Asteroid'
+import { type Artifact, ArtifactGallery } from './components/ArtifactGallery'
 import { EventNotification } from './components/EventNotification'
 import { type ExpeditionRecord, Expedition } from './components/Expedition'
 import { Fleet } from './components/Fleet'
+import { MiniGame, type MiniGameDifficulty } from './components/MiniGame'
 import { Missions } from './components/Missions'
+import { NarrativeModal } from './components/NarrativeModal'
 import { type FleetShip, type Planet, PlanetMap } from './components/PlanetMap'
 import { Referral } from './components/Referral'
 import { Shop } from './components/Shop'
@@ -24,7 +27,7 @@ type MissionsClaimed = {
 }
 
 type ActiveEvent = {
-  type: 'meteor' | 'anomaly'
+  type: 'meteor' | 'anomaly' | 'supernova'
   title: string
   description: string
   endAt: number
@@ -52,10 +55,23 @@ type SaveData = {
   ships: FleetShip[]
   expeditions: ExpeditionRecord[]
   freeUpgradeTokens: number
+  currentChapter: number
+  artifactCollection: string[]
+  historyLog: string[]
+  miniGameActiveUntil: number
+  miniGameCooldownUntil: number
+  miniGameDifficulty: MiniGameDifficulty
 }
 
 type ToastType = 'info' | 'success'
-type TabType = 'shop' | 'missions' | 'referral' | 'fleet' | 'expeditions'
+type TabType =
+  | 'shop'
+  | 'missions'
+  | 'referral'
+  | 'fleet'
+  | 'expeditions'
+  | 'artifacts'
+  | 'history'
 
 const PASSIVE_TICK_MS = BALANCE.tick.passiveMs
 const ENERGY_TICK_MS = BALANCE.tick.energyMs
@@ -136,6 +152,117 @@ const SHIPS_TEMPLATE: FleetShip[] = [
   { id: 'harvester-probe', name: 'Harvester Probe', icon: '🤖', level: 0 },
 ]
 
+const CHAPTERS = [
+  {
+    id: 1,
+    title: 'Глава 1: Awakening',
+    story: 'Первые сканеры запущены. Ты пробуждаешь спящую добывающую империю.',
+  },
+  {
+    id: 2,
+    title: 'Глава 2: Expansion',
+    story: 'Флот набирает мощь, и империя расширяет влияние на соседние системы.',
+  },
+  {
+    id: 3,
+    title: 'Глава 3: Rift Frontier',
+    story: 'Аномалии открывают рифты. За ними скрыты редкие ресурсы и опасности.',
+  },
+  {
+    id: 4,
+    title: 'Глава 4: Relic Wars',
+    story: 'Древние руины пробуждаются. Артефакты меняют правила галактической игры.',
+  },
+  {
+    id: 5,
+    title: 'Глава 5: Stellar Dominion',
+    story: 'Империя входит в эпоху звёздного господства. Осталось удержать баланс сил.',
+  },
+] as const
+
+const ARTIFACTS_POOL: Artifact[] = [
+  {
+    id: 'core-lens',
+    name: 'Линза ядра',
+    rarity: 'common',
+    description: 'Фокусирует кристаллические потоки.',
+    bonusLabel: '+0.2 к passivePerTick',
+    icon: '🔶',
+  },
+  {
+    id: 'quantum-anchor',
+    name: 'Квантовый якорь',
+    rarity: 'rare',
+    description: 'Стабилизирует маршруты экспедиций.',
+    bonusLabel: '+6% к награде экспедиций',
+    icon: '⚓',
+  },
+  {
+    id: 'void-compass',
+    name: 'Компас Пустоты',
+    rarity: 'epic',
+    description: 'Навигация по тёмным секторам.',
+    bonusLabel: '+0.6% к шансу пыли',
+    icon: '🧭',
+  },
+  {
+    id: 'stellar-seed',
+    name: 'Звёздное семя',
+    rarity: 'legendary',
+    description: 'Сгусток древней энергии.',
+    bonusLabel: '+10% к пассивному доходу',
+    icon: '🌟',
+  },
+  {
+    id: 'nebula-thread',
+    name: 'Нить туманности',
+    rarity: 'rare',
+    description: 'Остаток живой туманности.',
+    bonusLabel: '+0.4 к энергии за тик',
+    icon: '🪢',
+  },
+  {
+    id: 'time-fragment',
+    name: 'Фрагмент времени',
+    rarity: 'epic',
+    description: 'Искажает локальный темп добычи.',
+    bonusLabel: 'События происходят чаще',
+    icon: '⏳',
+  },
+  {
+    id: 'black-halo',
+    name: 'Чёрный ореол',
+    rarity: 'legendary',
+    description: 'Ореол сингулярности.',
+    bonusLabel: '+1.2% к шансу пыли',
+    icon: '🕳️',
+  },
+  {
+    id: 'ruin-seal',
+    name: 'Печать руин',
+    rarity: 'common',
+    description: 'Отклик древних цивилизаций.',
+    bonusLabel: '+5% к награде миссий',
+    icon: '🪬',
+  },
+  {
+    id: 'ion-crown',
+    name: 'Ионная корона',
+    rarity: 'rare',
+    description: 'Усиливает коридоры дронов.',
+    bonusLabel: '+0.2 к tapPower',
+    icon: '👑',
+  },
+  {
+    id: 'sun-shard',
+    name: 'Солнечный осколок',
+    rarity: 'epic',
+    description: 'Кристалл древней звезды.',
+    bonusLabel: '+8% к daily бонусу',
+    icon: '☀️',
+  },
+]
+
 function formatTonAddress(address: string): string {
   if (!address) return ''
   if (address.length <= 12) return address
@@ -213,6 +340,13 @@ function App() {
   const [selectedShipId, setSelectedShipId] = useState('')
   const [selectedDuration, setSelectedDuration] = useState(2)
   const [freeUpgradeTokens, setFreeUpgradeTokens] = useState(0)
+  const [currentChapter, setCurrentChapter] = useState(1)
+  const [artifactCollection, setArtifactCollection] = useState<string[]>([])
+  const [historyLog, setHistoryLog] = useState<string[]>([])
+  const [miniGameActiveUntil, setMiniGameActiveUntil] = useState(0)
+  const [miniGameCooldownUntil, setMiniGameCooldownUntil] = useState(0)
+  const [miniGameDifficulty, setMiniGameDifficulty] =
+    useState<MiniGameDifficulty>('normal')
 
   const [activeTab, setActiveTab] = useState<TabType>('shop')
   const [isTapBurst, setIsTapBurst] = useState(false)
@@ -226,16 +360,24 @@ function App() {
     description: string
     visible: boolean
   } | null>(null)
+  const [narrativeModal, setNarrativeModal] = useState<{
+    title: string
+    description: string
+    visible: boolean
+  } | null>(null)
+  const [screenFlash, setScreenFlash] = useState(false)
 
   const particleIdRef = useRef(1)
   const burstTimerRef = useRef<number | null>(null)
   const toastTimerRef = useRef<number | null>(null)
   const eventNoticeTimerRef = useRef<number | null>(null)
+  const flashTimerRef = useRef<number | null>(null)
   const isHydratedRef = useRef(false)
   const passiveBufferRef = useRef(0)
   const energyBufferRef = useRef(0)
   const referralLink = `https://t.me/Galaxor_bot?start=ref_${userId}`
   const walletConnected = Boolean(tonAddress)
+  const activeChapter = CHAPTERS[currentChapter - 1] ?? CHAPTERS[0]
 
   const explorerLevel = ships.find((ship) => ship.id === 'explorer-scout')?.level ?? 0
   const miningLevel = ships.find((ship) => ship.id === 'mining-drone')?.level ?? 0
@@ -244,6 +386,30 @@ function App() {
   const activePlanet =
     planets.find((planet) => planet.id === currentPlanetId) ?? planets[0]
   const unlockedPlanets = planets.filter((planet) => planet.unlocked)
+  const hasFullArtifactSet = artifactCollection.length >= ARTIFACTS_POOL.length
+  const artifactPassiveBonus = artifactCollection.includes('core-lens') ? 0.2 : 0
+  const artifactTapBonus = artifactCollection.includes('ion-crown') ? 0.2 : 0
+  const artifactStardustBonus =
+    (artifactCollection.includes('void-compass') ? 0.6 : 0) +
+    (artifactCollection.includes('black-halo') ? 1.2 : 0)
+  const artifactEnergyTickBonus = artifactCollection.includes('nebula-thread')
+    ? 0.4
+    : 0
+  const artifactExpeditionBonus = artifactCollection.includes('quantum-anchor')
+    ? 1.06
+    : 1
+  const artifactDailyBonus = artifactCollection.includes('sun-shard') ? 1.08 : 1
+  const artifactMissionBonus = artifactCollection.includes('ruin-seal') ? 1.05 : 1
+  const eventFrequencyFactor = artifactCollection.includes('time-fragment') ? 0.8 : 1
+  const miniGameActive = miniGameActiveUntil > Date.now()
+  const miniGameRemainingSec = Math.max(
+    0,
+    Math.ceil((miniGameActiveUntil - Date.now()) / 1000),
+  )
+  const miniGameCooldownSec = Math.max(
+    0,
+    Math.ceil((miniGameCooldownUntil - Date.now()) / 1000),
+  )
 
   let planetsPassiveSum = 0
   for (const planet of unlockedPlanets) planetsPassiveSum += planet.passiveMultiplier
@@ -251,17 +417,22 @@ function App() {
   const fleetPassiveMultiplier = Math.pow(BALANCE.ships.passivePerLevel, miningLevel)
   const eventTapMultiplier =
     activeEvent?.type === 'meteor' ? BALANCE.events.meteorTapMultiplier : 1
-  const eventPassiveMultiplier =
-    activeEvent?.type === 'anomaly' ? BALANCE.events.anomalyPassiveMultiplier : 1
+  const eventPassiveMultiplier = activeEvent?.type === 'supernova'
+    ? 10
+    : activeEvent?.type === 'anomaly'
+      ? BALANCE.events.anomalyPassiveMultiplier
+      : 1
   const anomalyStardustBonus =
     activeEvent?.type === 'anomaly' ? BALANCE.drops.anomalyStardustBonus : 0
 
   const passiveIncome =
-    passivePerTick *
+    (passivePerTick + artifactPassiveBonus) *
     multiplier *
     Math.max(1, planetsPassiveSum) *
     fleetPassiveMultiplier *
-    eventPassiveMultiplier
+    eventPassiveMultiplier *
+    (hasFullArtifactSet ? 1.25 : 1) *
+    (artifactCollection.includes('stellar-seed') ? 1.1 : 1)
 
   const missionTapDone = tapCount >= BALANCE.missions.tapsGoal
   const missionCrystalsDone = crystals >= BALANCE.missions.crystalsGoal
@@ -281,11 +452,14 @@ function App() {
     BALANCE.shop.rare.base * Math.pow(stardustChance + 1, BALANCE.shop.rare.power),
   )
 
-  const tapMissionReward =
-    BALANCE.missions.tapRewardBase + level * BALANCE.missions.tapRewardPerLevel
-  const upgradesMissionReward =
+  const tapMissionReward = Math.floor(
+    (BALANCE.missions.tapRewardBase + level * BALANCE.missions.tapRewardPerLevel) *
+      artifactMissionBonus,
+  )
+  const upgradesMissionReward = Math.floor(
     BALANCE.missions.upgradesRewardBase +
-    level * BALANCE.missions.upgradesRewardPerLevel
+      level * BALANCE.missions.upgradesRewardPerLevel * artifactMissionBonus,
+  )
   const crystalsMissionEnergyReward =
     1 + Math.floor(level / BALANCE.missions.energyRewardPerLevelStep)
 
@@ -310,6 +484,27 @@ function App() {
         prev ? { ...prev, visible: false } : { title, description, visible: false },
       )
     }, 10000)
+  }
+
+  const pushHistory = (entry: string) => {
+    const stamp = new Date().toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    setHistoryLog((prev) => [`[${stamp}] ${entry}`, ...prev].slice(0, 60))
+  }
+
+  const tryUnlockArtifact = (source: string, chance: number) => {
+    if (Math.random() >= chance) return false
+    const locked = ARTIFACTS_POOL.filter(
+      (artifact) => !artifactCollection.includes(artifact.id),
+    )
+    if (locked.length === 0) return false
+    const picked = locked[Math.floor(Math.random() * locked.length)]
+    setArtifactCollection((prev) => [...prev, picked.id])
+    showToast(`Найден артефакт: ${picked.name}`, 'success')
+    pushHistory(`Получен артефакт "${picked.name}" (${source})`)
+    return true
   }
 
   const getShipCost = (shipId: string, shipLevel: number) => {
@@ -374,6 +569,12 @@ function App() {
       const baseShips = parsed.ships ?? SHIPS_TEMPLATE
       const baseExpeditions = parsed.expeditions ?? []
       const baseFreeTokens = parsed.freeUpgradeTokens ?? 0
+      const baseCurrentChapter = parsed.currentChapter ?? 1
+      const baseArtifacts = parsed.artifactCollection ?? []
+      const baseHistory = parsed.historyLog ?? []
+      const baseMiniGameActiveUntil = parsed.miniGameActiveUntil ?? 0
+      const baseMiniGameCooldownUntil = parsed.miniGameCooldownUntil ?? 0
+      const baseMiniGameDifficulty = parsed.miniGameDifficulty ?? 'normal'
 
       const elapsed = Math.max(0, Math.min(Date.now() - baseLastSeen, MAX_OFFLINE_MS))
       let savedPassiveSum = 0
@@ -419,6 +620,12 @@ function App() {
       setShips(baseShips)
       setExpeditions(baseExpeditions)
       setFreeUpgradeTokens(baseFreeTokens)
+      setCurrentChapter(baseCurrentChapter)
+      setArtifactCollection(baseArtifacts)
+      setHistoryLog(baseHistory)
+      setMiniGameActiveUntil(baseMiniGameActiveUntil)
+      setMiniGameCooldownUntil(baseMiniGameCooldownUntil)
+      setMiniGameDifficulty(baseMiniGameDifficulty)
 
       if (offlineCrystals > 0 || offlineEnergy > 0) {
         showToast(
@@ -490,7 +697,8 @@ function App() {
         (BALANCE.events.minDelayMin +
           Math.random() * (BALANCE.events.maxDelayMin - BALANCE.events.minDelayMin)) *
         60 *
-        1000
+        1000 *
+        eventFrequencyFactor
       timerId = window.setTimeout(() => {
         if (cancelled) return
         if (Math.random() < BALANCE.events.triggerChance) {
@@ -520,6 +728,7 @@ function App() {
             showToast('Событие: пространственная аномалия', 'info')
           } else {
             setFreeUpgradeTokens((prev) => prev + 1)
+            tryUnlockArtifact('событие', 0.35)
             showEventNotice('Древний артефакт', 'Получен бесплатный апгрейд')
             showToast('Артефакт найден: +1 бесплатный апгрейд', 'success')
           }
@@ -533,6 +742,32 @@ function App() {
       cancelled = true
       window.clearTimeout(timerId)
     }
+  }, [walletConnected, eventFrequencyFactor])
+
+  useEffect(() => {
+    if (!walletConnected) return
+    const timer = window.setInterval(() => {
+      if (Math.random() < 0.01) {
+        const now = Date.now()
+        setActiveEvent({
+          type: 'supernova',
+          title: 'Supernova',
+          description: 'Сверхновая: пассив x10 на 30 секунд',
+          endAt: now + 30000,
+        })
+        setNarrativeModal({
+          title: 'Supernova!',
+          description: 'Сверхновая вспыхнула в секторе. Пассивный доход x10 на 30 секунд.',
+          visible: true,
+        })
+        setScreenFlash(true)
+        if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current)
+        flashTimerRef.current = window.setTimeout(() => setScreenFlash(false), 700)
+        pushHistory('Событие Supernova активировано')
+        showToast('Supernova: пассив x10', 'success')
+      }
+    }, 60000)
+    return () => window.clearInterval(timer)
   }, [walletConnected])
 
   useEffect(() => {
@@ -581,6 +816,12 @@ function App() {
       ships,
       expeditions,
       freeUpgradeTokens,
+      currentChapter,
+      artifactCollection,
+      historyLog,
+      miniGameActiveUntil,
+      miniGameCooldownUntil,
+      miniGameDifficulty,
     }
     window.localStorage.setItem('galaxor_save', JSON.stringify(saveData))
   }, [
@@ -604,6 +845,12 @@ function App() {
     ships,
     expeditions,
     freeUpgradeTokens,
+    currentChapter,
+    artifactCollection,
+    historyLog,
+    miniGameActiveUntil,
+    miniGameCooldownUntil,
+    miniGameDifficulty,
   ])
 
   useEffect(() => {
@@ -623,7 +870,7 @@ function App() {
   useEffect(() => {
     if (!walletConnected) return
     const timer = window.setInterval(() => {
-      energyBufferRef.current += energyMultiplier
+      energyBufferRef.current += energyMultiplier + artifactEnergyTickBonus
       const readyEnergy = Math.floor(energyBufferRef.current)
       if (readyEnergy > 0) {
         energyBufferRef.current -= readyEnergy
@@ -631,7 +878,7 @@ function App() {
       }
     }, ENERGY_TICK_MS)
     return () => window.clearInterval(timer)
-  }, [energyMultiplier, walletConnected])
+  }, [energyMultiplier, walletConnected, artifactEnergyTickBonus])
 
   useEffect(() => {
     if (!isHydratedRef.current) return
@@ -646,11 +893,32 @@ function App() {
   }, [level, totalEarned])
 
   useEffect(() => {
+    if (!isHydratedRef.current) return
+    const nextChapter = Math.min(Math.floor(level / 5) + 1, CHAPTERS.length)
+    if (nextChapter <= currentChapter) return
+    const chapterData = CHAPTERS[nextChapter - 1]
+    const chapterCrystalBonus = nextChapter * 300
+    const chapterEnergyBonus = nextChapter * 4
+    setCurrentChapter(nextChapter)
+    setCrystals((prev) => prev + chapterCrystalBonus)
+    setTotalEarned((prev) => prev + chapterCrystalBonus)
+    setEnergy((prev) => prev + chapterEnergyBonus)
+    setNarrativeModal({
+      title: `Ты открыл новую эру! ${chapterData.title}`,
+      description: `${chapterData.story} Награда: +${chapterCrystalBonus} кристаллов и +${chapterEnergyBonus} энергии.`,
+      visible: true,
+    })
+    pushHistory(`Открыта новая глава: ${chapterData.title}`)
+    showToast(`Новая глава: ${chapterData.title}`, 'success')
+  }, [currentChapter, level])
+
+  useEffect(() => {
     return () => {
       if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current)
       if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
       if (eventNoticeTimerRef.current)
         window.clearTimeout(eventNoticeTimerRef.current)
+      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current)
     }
   }, [])
 
@@ -684,7 +952,10 @@ function App() {
   }
 
   const handlePlanetTap = (x: number, y: number) => {
-    const gain = tapPower * activePlanet.tapBonus.crystals * eventTapMultiplier
+    const gain =
+      (tapPower + artifactTapBonus) *
+      activePlanet.tapBonus.crystals *
+      eventTapMultiplier
     const roundedGain = Math.max(1, Math.floor(gain))
     setCrystals((prev) => prev + roundedGain)
     setTotalEarned((prev) => prev + roundedGain)
@@ -706,7 +977,8 @@ function App() {
       stardustChance +
       activePlanet.tapBonus.stardustChance +
       harvesterLevel * BALANCE.drops.harvesterStardustPerLevel +
-      anomalyStardustBonus
+      anomalyStardustBonus +
+      artifactStardustBonus
     if (level >= 8 && Math.random() < finalStardustChance / 100) {
       setStardust((prev) => prev + 1)
       showToast('+1 звёздная пыль!', 'success')
@@ -728,6 +1000,7 @@ function App() {
     setPassivePerTick((prev) => prev + BALANCE.shop.passive.passiveAdd)
     setMultiplier((prev) => prev + BALANCE.shop.passive.multiplierAdd)
     setUpgradesBought((prev) => prev + 1)
+    pushHistory('Куплено улучшение: Ускорить пассив')
     showToast('Улучшение куплено: Ускорить пассив', 'success')
   }
 
@@ -735,6 +1008,7 @@ function App() {
     if (!spendForUpgrade(costTap)) return
     setTapPower((prev) => prev + BALANCE.shop.tap.tapAdd)
     setUpgradesBought((prev) => prev + 1)
+    pushHistory('Куплено улучшение: Увеличить тап')
     showToast('Улучшение куплено: Увеличить тап', 'success')
   }
 
@@ -743,6 +1017,7 @@ function App() {
     if (!spendForUpgrade(costEnergy)) return
     setEnergyMultiplier((prev) => prev + BALANCE.shop.energy.multiplierAdd)
     setUpgradesBought((prev) => prev + 1)
+    pushHistory('Куплено улучшение: Энергия бустер')
     showToast('Улучшение куплено: Энергия бустер', 'success')
   }
 
@@ -751,6 +1026,7 @@ function App() {
     if (!spendForUpgrade(costRare)) return
     setStardustChance((prev) => prev + BALANCE.shop.rare.chanceAdd)
     setUpgradesBought((prev) => prev + 1)
+    pushHistory('Куплено улучшение: Редкий дроп')
     showToast('Улучшение куплено: Редкий дроп', 'success')
   }
 
@@ -770,13 +1046,14 @@ function App() {
 
   const claimDailyBonus = () => {
     if (!canClaimDaily) return
-    const reward = BALANCE.daily.rewardPerLevel * level
+    const reward = Math.floor(BALANCE.daily.rewardPerLevel * level * artifactDailyBonus)
     const now = Date.now()
     setCrystals((prev) => prev + reward)
     setTotalEarned((prev) => prev + reward)
     setCanClaimDaily(false)
     setLastClaimAt(now)
     window.localStorage.setItem('lastClaim', String(now))
+    pushHistory(`Получен ежедневный бонус: +${reward} кристаллов`)
     showToast(`Ежедневный бонус: +${reward} кристаллов`, 'success')
   }
 
@@ -812,6 +1089,45 @@ function App() {
     }
   }
 
+  const shareEmpire = async () => {
+    const text =
+      `Я строю империю в Galaxor! Уровень ${level}, кристаллы ${Math.floor(crystals)}. ` +
+      `Присоединяйся: ${referralLink}`
+    try {
+      await navigator.clipboard.writeText(text)
+      showToast('Текст империи скопирован', 'success')
+    } catch {
+      showToast('Не удалось скопировать текст', 'info')
+    }
+  }
+
+  const activateMiniGame = () => {
+    if (miniGameActive || miniGameCooldownSec > 0) return
+    const now = Date.now()
+    setMiniGameActiveUntil(now + 60_000)
+    setMiniGameCooldownUntil(now + 180_000)
+    pushHistory(`Активирована мини-игра на планете ${activePlanet.name}`)
+    showToast('Мини-игра активирована на 60с', 'success')
+  }
+
+  const changeMiniGameDifficulty = (difficulty: MiniGameDifficulty) => {
+    setMiniGameDifficulty(difficulty)
+    pushHistory(`Режим мини-игры: ${difficulty === 'easy' ? 'Лёгкий' : difficulty === 'hard' ? 'Хард' : 'Нормальный'}`)
+  }
+
+  const handleMiniGameReward = (
+    reward: { crystals: number; energy: number; stardust: number; artifactRoll: boolean },
+    message: string,
+  ) => {
+    setCrystals((prev) => prev + reward.crystals)
+    setEnergy((prev) => prev + reward.energy)
+    setStardust((prev) => prev + reward.stardust)
+    setTotalEarned((prev) => prev + reward.crystals)
+    if (reward.artifactRoll) tryUnlockArtifact('мини-игра', 1)
+    pushHistory(`${message}: +${reward.crystals} крист., +${reward.energy} энергии`)
+    showToast('Награда мини-игры получена', 'success')
+  }
+
   const sendExpedition = () => {
     if (!selectedShipId) return
     const ship = ships.find((item) => item.id === selectedShipId)
@@ -829,7 +1145,8 @@ function App() {
     const baseReward = Math.floor(
       (ship.level + unlockedCount) *
         selectedDuration *
-        BALANCE.expedition.rewardBaseFactor,
+        BALANCE.expedition.rewardBaseFactor *
+        artifactExpeditionBonus,
     )
     const reward: ExpeditionRecord['reward'] = {
       crystals: baseReward,
@@ -857,6 +1174,7 @@ function App() {
       reward,
     }
     setExpeditions((prev) => [newExpedition, ...prev])
+    pushHistory(`Экспедиция отправлена: ${ship.name} на ${selectedDuration}ч`)
     showToast(`Экспедиция отправлена: ${ship.name}`, 'success')
   }
 
@@ -868,18 +1186,24 @@ function App() {
     setEnergy((prev) => prev + target.reward.energy)
     setStardust((prev) => prev + target.reward.stardust)
     setTotalEarned((prev) => prev + target.reward.crystals)
-    if (target.reward.artifact) setFreeUpgradeTokens((prev) => prev + 1)
+    if (target.reward.artifact) {
+      setFreeUpgradeTokens((prev) => prev + 1)
+      tryUnlockArtifact('экспедиция', 0.6)
+    }
 
     setExpeditions((prev) =>
       prev.map((item) =>
         item.id === expeditionId ? { ...item, status: 'claimed' } : item,
       ),
     )
+    pushHistory(`Завершена экспедиция: ${target.shipName}`)
     showToast('Награда экспедиции получена', 'success')
   }
 
   return (
-    <main className="space-bg min-h-[100svh] w-full px-4 py-6 text-white sm:px-6">
+    <main
+      className={`space-bg chapter-${currentChapter} min-h-[100svh] w-full px-4 py-6 text-white sm:px-6`}
+    >
       <section className="relative mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-5xl flex-col rounded-3xl border border-white/10 bg-slate-950/40 p-5 backdrop-blur-xl shadow-[0_0_90px_rgba(20,130,255,0.2)] sm:p-8">
         <p className="text-center text-sm text-slate-300">
           {username ? `Пилот: @${username}` : 'Пилот: имя пользователя недоступно'}
@@ -929,6 +1253,7 @@ function App() {
               currentPlanetName={activePlanet.name}
               currentPlanetPassive={activePlanet.passiveMultiplier}
               freeUpgradeTokens={freeUpgradeTokens}
+              chapterTitle={activeChapter.title}
             />
 
             <PlanetMap
@@ -941,7 +1266,19 @@ function App() {
               onTapPlanet={handlePlanetTap}
             />
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-900/50 p-2 md:grid-cols-5">
+            <MiniGame
+              planet={activePlanet}
+              level={level}
+              active={miniGameActive}
+              remainingSec={miniGameRemainingSec}
+              cooldownSec={miniGameCooldownSec}
+              difficulty={miniGameDifficulty}
+              onDifficultyChange={changeMiniGameDifficulty}
+              onActivate={activateMiniGame}
+              onReward={handleMiniGameReward}
+            />
+
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-900/50 p-2 md:grid-cols-7">
               <button
                 type="button"
                 onClick={() => setActiveTab('shop')}
@@ -976,6 +1313,20 @@ function App() {
                 className={`tab-btn ${activeTab === 'referral' ? 'tab-btn-active' : ''}`}
               >
                 Пригласить
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('artifacts')}
+                className={`tab-btn ${activeTab === 'artifacts' ? 'tab-btn-active' : ''}`}
+              >
+                Артефакты
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className={`tab-btn ${activeTab === 'history' ? 'tab-btn-active' : ''}`}
+              >
+                История
               </button>
             </div>
 
@@ -1021,7 +1372,7 @@ function App() {
               <Missions
                 level={level}
                 canClaimDaily={canClaimDaily}
-                dailyReward={BALANCE.daily.rewardPerLevel * level}
+                dailyReward={Math.floor(BALANCE.daily.rewardPerLevel * level * artifactDailyBonus)}
                 dailyCooldown={getTimeLeftText(lastClaimAt)}
                 missionTapDone={missionTapDone}
                 missionTapProgress={tapCount}
@@ -1047,8 +1398,43 @@ function App() {
                 referralLink={referralLink}
                 userId={userId}
                 invitedCount={0}
+                allianceFriends={3}
                 onCopy={copyReferralLink}
+                onShareEmpire={shareEmpire}
               />
+            )}
+
+            {activeTab === 'artifacts' && (
+              <ArtifactGallery
+                artifacts={ARTIFACTS_POOL}
+                ownedIds={artifactCollection}
+                setBonusActive={hasFullArtifactSet}
+              />
+            )}
+
+            {activeTab === 'history' && (
+              <section className="rounded-2xl border border-white/10 bg-slate-900/35 p-4">
+                <h2 className="text-base font-semibold text-white">История</h2>
+                <p className="mt-1 text-xs text-slate-300">
+                  Хроника событий, глав и экспедиций
+                </p>
+                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {historyLog.length === 0 ? (
+                    <p className="text-sm text-slate-300">
+                      Пока история пуста. Начни исследование галактики.
+                    </p>
+                  ) : (
+                    historyLog.map((item, index) => (
+                      <p
+                        key={`${item}-${index}`}
+                        className="rounded-lg border border-white/10 bg-slate-900/55 px-3 py-2 text-xs text-slate-200"
+                      >
+                        {item}
+                      </p>
+                    ))
+                  )}
+                </div>
+              </section>
             )}
           </div>
         )}
@@ -1064,6 +1450,13 @@ function App() {
             {toast.text}
           </div>
         )}
+        <NarrativeModal
+          visible={Boolean(narrativeModal?.visible)}
+          title={narrativeModal?.title ?? ''}
+          description={narrativeModal?.description ?? ''}
+          onClose={() => setNarrativeModal(null)}
+        />
+        {screenFlash && <div className="screen-flash" />}
       </section>
     </main>
   )

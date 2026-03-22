@@ -36,6 +36,42 @@ body {
     linear-gradient(180deg, #020617 0%, #020d1e 46%, #050b16 100%);
 }
 
+.chapter-1 {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(34, 211, 238, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 72%, rgba(147, 51, 234, 0.25), transparent 40%),
+    radial-gradient(circle at 48% 58%, rgba(30, 64, 175, 0.35), transparent 56%),
+    linear-gradient(180deg, #020617 0%, #020d1e 46%, #050b16 100%);
+}
+
+.chapter-2 {
+  background:
+    radial-gradient(circle at 25% 18%, rgba(16, 185, 129, 0.18), transparent 36%),
+    radial-gradient(circle at 78% 65%, rgba(59, 130, 246, 0.22), transparent 42%),
+    linear-gradient(180deg, #041127 0%, #0b1735 52%, #111827 100%);
+}
+
+.chapter-3 {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.24), transparent 40%),
+    radial-gradient(circle at 80% 65%, rgba(236, 72, 153, 0.22), transparent 42%),
+    linear-gradient(180deg, #190b2f 0%, #1f123d 52%, #0f172a 100%);
+}
+
+.chapter-4 {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.2), transparent 45%),
+    radial-gradient(circle at 20% 75%, rgba(217, 119, 6, 0.18), transparent 36%),
+    linear-gradient(180deg, #1f1305 0%, #2b1908 52%, #0f172a 100%);
+}
+
+.chapter-5 {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(250, 204, 21, 0.26), transparent 42%),
+    radial-gradient(circle at 75% 70%, rgba(16, 185, 129, 0.18), transparent 40%),
+    linear-gradient(180deg, #1e1b4b 0%, #312e81 45%, #020617 100%);
+}
+
 .space-bg::before,
 .space-bg::after {
   content: "";
@@ -300,4 +336,62 @@ body {
   padding: 10px 14px;
   color: #f8fafc;
   box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.modal-card {
+  width: min(92vw, 460px);
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  background: rgba(15, 23, 42, 0.96);
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+}
+
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 39;
+  pointer-events: none;
+  animation: flash 0.7s ease forwards;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.artifact-common {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.5), rgba(30, 41, 59, 0.65));
+}
+
+.artifact-rare {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.55), rgba(15, 23, 42, 0.75));
+}
+
+.artifact-epic {
+  border-color: rgba(168, 85, 247, 0.65);
+  background: linear-gradient(135deg, rgba(126, 34, 206, 0.5), rgba(30, 27, 75, 0.8));
+}
+
+.artifact-legendary {
+  border-color: rgba(251, 191, 36, 0.75);
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.58), rgba(67, 20, 7, 0.82));
 }
