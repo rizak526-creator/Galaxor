@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 type NarrativeModalProps = {
   visible: boolean
   title: string
@@ -12,8 +14,10 @@ export function NarrativeModal({
   onClose,
 }: NarrativeModalProps) {
   if (!visible) return null
+  const target = typeof document !== 'undefined' ? document.body : null
+  if (!target) return null
 
-  return (
+  return createPortal(
     <div className="modal-overlay">
       <div className="modal-card">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
@@ -28,6 +32,7 @@ export function NarrativeModal({
           Продолжить
         </button>
       </div>
-    </div>
+    </div>,
+    target,
   )
 }
