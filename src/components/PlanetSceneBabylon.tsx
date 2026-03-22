@@ -437,6 +437,90 @@ function makeCityLights(scene: Scene, seed: number) {
   return texture
 }
 
+function makeDetailOverlay(scene: Scene, planetId: string, seed: number) {
+  const texture = new DynamicTexture(`planet-detail-${planetId}-${seed}`, { width: 1024, height: 512 }, scene, false)
+  const ctx = texture.getContext() as unknown as CanvasRenderingContext2D
+  ctx.clearRect(0, 0, 1024, 512)
+  const rand = (n: number) => {
+    const x = Math.sin(seed * 727 + n * 41) * 10000
+    return x - Math.floor(x)
+  }
+
+  if (planetId === 'earth-like') {
+    for (let i = 0; i < 18; i += 1) {
+      const x = rand(i + 1) * 1024
+      const y = rand(i + 21) * 512
+      ctx.fillStyle = i % 2 === 0 ? '#16a34a66' : '#16653455'
+      ctx.beginPath()
+      ctx.ellipse(x, y, 90 + rand(i + 41) * 120, 20 + rand(i + 59) * 40, rand(i + 73) * Math.PI, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  } else if (planetId === 'gas-giant') {
+    for (let y = 0; y < 512; y += 13) {
+      const alpha = 0.14 + Math.sin(y * 0.08 + seed * 0.0003) * 0.08
+      ctx.fillStyle = `rgba(254,215,170,${Math.max(0.03, alpha).toFixed(3)})`
+      ctx.fillRect(0, y, 1024, 8)
+    }
+    const eye = ctx.createRadialGradient(730, 260, 8, 730, 260, 85)
+    eye.addColorStop(0, '#fff7edcc')
+    eye.addColorStop(0.5, '#fb923c88')
+    eye.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = eye
+    ctx.beginPath()
+    ctx.ellipse(730, 260, 120, 70, 0.21, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (planetId === 'nebula') {
+    for (let i = 0; i < 20; i += 1) {
+      ctx.strokeStyle = i % 2 === 0 ? '#a78bfa66' : '#67e8f955'
+      ctx.lineWidth = 2 + rand(i + 101) * 5
+      ctx.beginPath()
+      ctx.moveTo(rand(i + 123) * 1024, rand(i + 149) * 512)
+      ctx.bezierCurveTo(
+        rand(i + 173) * 1024,
+        rand(i + 197) * 512,
+        rand(i + 223) * 1024,
+        rand(i + 241) * 512,
+        rand(i + 269) * 1024,
+        rand(i + 293) * 512,
+      )
+      ctx.stroke()
+    }
+  } else if (planetId === 'black-hole') {
+    for (let i = 0; i < 10; i += 1) {
+      ctx.strokeStyle = i % 2 === 0 ? '#f59e0b88' : '#fb923c66'
+      ctx.lineWidth = 2.2 + rand(i + 307) * 2.6
+      ctx.beginPath()
+      const r = 120 + i * 24
+      ctx.ellipse(512, 256, r, r * 0.33, 0.42, 0.3 + i * 0.18, 2.05 + i * 0.22)
+      ctx.stroke()
+    }
+  } else if (planetId === 'ice-world') {
+    for (let i = 0; i < 26; i += 1) {
+      ctx.strokeStyle = i % 2 === 0 ? '#e0f2fe88' : '#bae6fd66'
+      ctx.lineWidth = 1.5 + rand(i + 401) * 3.4
+      ctx.beginPath()
+      const x = rand(i + 427) * 1024
+      const y = rand(i + 449) * 512
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + (rand(i + 479) - 0.5) * 260, y + (rand(i + 503) - 0.5) * 170)
+      ctx.stroke()
+    }
+  } else if (planetId === 'ancient-ruins') {
+    for (let i = 0; i < 14; i += 1) {
+      const x = rand(i + 541) * 1024
+      const y = rand(i + 563) * 512
+      const r = 16 + rand(i + 587) * 48
+      ctx.strokeStyle = '#b4530977'
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  }
+  texture.update(false)
+  return texture
+}
+
 type OrbitProfileMeta = ShipOrbitLayout & {
   id: string
   variant: ShipVariant
@@ -481,28 +565,30 @@ function createShipModel(
   id: string,
   shipIndex: number,
 ) {
+  const accent =
+    variant === 'interceptor' ? '#22d3ee' : variant === 'carrier' ? '#f97316' : '#a78bfa'
   const hullMat = new PBRMaterial(`ship-hull-mat-${id}`, scene)
   hullMat.albedoColor =
     variant === 'carrier'
-      ? Color3.FromHexString('#cbd5e1')
+      ? Color3.FromHexString('#94a3b8')
       : variant === 'explorer'
-        ? Color3.FromHexString('#e2e8f0')
-        : Color3.FromHexString('#f1f5f9')
-  hullMat.metallic = 0.98
-  hullMat.roughness = variant === 'carrier' ? 0.12 : 0.09
+        ? Color3.FromHexString('#cbd5e1')
+        : Color3.FromHexString('#e2e8f0')
+  hullMat.metallic = 0.99
+  hullMat.roughness = variant === 'carrier' ? 0.14 : 0.1
   hullMat.clearCoat.isEnabled = true
-  hullMat.clearCoat.intensity = 0.78
-  hullMat.clearCoat.roughness = 0.08
-  hullMat.environmentIntensity = 1.2
+  hullMat.clearCoat.intensity = 0.86
+  hullMat.clearCoat.roughness = 0.07
+  hullMat.environmentIntensity = 1.24
 
   const darkHullMat = new PBRMaterial(`ship-dark-mat-${id}`, scene)
-  darkHullMat.albedoColor = Color3.FromHexString('#475569')
+  darkHullMat.albedoColor = Color3.FromHexString('#1e293b')
   darkHullMat.metallic = 0.92
-  darkHullMat.roughness = 0.16
+  darkHullMat.roughness = 0.14
   darkHullMat.environmentIntensity = 1.05
 
   const wingMat = new PBRMaterial(`ship-wing-mat-${id}`, scene)
-  wingMat.albedoColor = Color3.FromHexString('#cbd5e1')
+  wingMat.albedoColor = Color3.FromHexString('#e5e7eb')
   wingMat.metallic = 0.97
   wingMat.roughness = 0.11
   wingMat.clearCoat.isEnabled = true
@@ -512,7 +598,12 @@ function createShipModel(
 
   const fuselage = MeshBuilder.CreateCylinder(
     `ship-fuselage-${id}`,
-    { height: variant === 'carrier' ? 0.36 : 0.3, diameterTop: 0.06, diameterBottom: 0.09, tessellation: 18 },
+    {
+      height: variant === 'carrier' ? 0.42 : variant === 'explorer' ? 0.34 : 0.3,
+      diameterTop: variant === 'interceptor' ? 0.046 : 0.058,
+      diameterBottom: variant === 'carrier' ? 0.11 : 0.09,
+      tessellation: 18,
+    },
     scene,
   )
   fuselage.parent = shipVisual
@@ -521,23 +612,27 @@ function createShipModel(
 
   const nose = MeshBuilder.CreateSphere(`ship-nose-${id}`, { diameter: 0.09, segments: 12 }, scene)
   nose.parent = shipVisual
-  nose.position.z = 0.18
-  nose.scaling.set(0.72, 0.62, 1.25)
+  nose.position.z = variant === 'carrier' ? 0.2 : 0.18
+  nose.scaling.set(variant === 'interceptor' ? 0.66 : 0.74, 0.62, variant === 'interceptor' ? 1.45 : 1.25)
   nose.material = hullMat
 
   const cabin = MeshBuilder.CreateBox(
     `ship-cabin-${id}`,
-    { width: variant === 'carrier' ? 0.13 : 0.11, height: 0.055, depth: 0.11 },
+    {
+      width: variant === 'carrier' ? 0.145 : 0.105,
+      height: variant === 'interceptor' ? 0.048 : 0.06,
+      depth: variant === 'carrier' ? 0.13 : 0.11,
+    },
     scene,
   )
   cabin.parent = shipVisual
-  cabin.position.y = 0.05
+  cabin.position.y = variant === 'interceptor' ? 0.044 : 0.054
   cabin.position.z = 0.03
   cabin.material = darkHullMat
 
-  const wingSpan = variant === 'carrier' ? 0.19 : variant === 'explorer' ? 0.16 : 0.145
-  const wingSweep = variant === 'interceptor' ? 0.18 : 0.1
-  const wingDepth = variant === 'carrier' ? 0.14 : 0.11
+  const wingSpan = variant === 'carrier' ? 0.23 : variant === 'explorer' ? 0.18 : 0.16
+  const wingSweep = variant === 'interceptor' ? 0.24 : variant === 'explorer' ? 0.13 : 0.08
+  const wingDepth = variant === 'carrier' ? 0.18 : variant === 'explorer' ? 0.12 : 0.1
   const wingL = MeshBuilder.CreateBox(`ship-wing-l-${id}`, { width: wingSpan, height: 0.01, depth: wingDepth }, scene)
   wingL.parent = shipVisual
   wingL.position.x = -0.12
@@ -572,6 +667,19 @@ function createShipModel(
     bay.position.y = -0.045
     bay.position.z = -0.02
     bay.material = darkHullMat
+    const podL = MeshBuilder.CreateCylinder(
+      `ship-pod-l-${id}`,
+      { height: 0.17, diameterTop: 0.05, diameterBottom: 0.06, tessellation: 12 },
+      scene,
+    )
+    podL.parent = shipVisual
+    podL.rotation.x = Math.PI * 0.5
+    podL.position.x = -0.16
+    podL.position.z = -0.01
+    podL.material = hullMat
+    const podR = podL.clone(`ship-pod-r-${id}`)
+    podR.parent = shipVisual
+    podR.position.x = 0.16
   } else if (variant === 'explorer') {
     const sensor = MeshBuilder.CreateTorus(`ship-sensor-${id}`, { diameter: 0.09, thickness: 0.009, tessellation: 30 }, scene)
     sensor.parent = shipVisual
@@ -581,6 +689,22 @@ function createShipModel(
     sensorMat.emissiveColor = Color3.FromHexString('#67e8f9').scale(0.7)
     sensorMat.alpha = 0.86
     sensor.material = sensorMat
+    const spine = MeshBuilder.CreateBox(`ship-spine-${id}`, { width: 0.028, height: 0.07, depth: 0.18 }, scene)
+    spine.parent = shipVisual
+    spine.position.y = 0.055
+    spine.position.z = 0.01
+    spine.material = darkHullMat
+  } else {
+    const cannon = MeshBuilder.CreateCylinder(
+      `ship-cannon-${id}`,
+      { height: 0.15, diameterTop: 0.01, diameterBottom: 0.02, tessellation: 10 },
+      scene,
+    )
+    cannon.parent = shipVisual
+    cannon.rotation.x = Math.PI * 0.5
+    cannon.position.y = 0.03
+    cannon.position.z = 0.19
+    cannon.material = darkHullMat
   }
 
   const cockpit = MeshBuilder.CreateSphere(`ship-cockpit-${id}`, { diameter: 0.05, segments: 12 }, scene)
@@ -592,7 +716,21 @@ function createShipModel(
   cockpitMat.alpha = 0.86
   cockpit.material = cockpitMat
 
-  const enginePositions = [-0.04, 0.04]
+  const accentStrip = MeshBuilder.CreateBox(
+    `ship-accent-${id}`,
+    { width: 0.028, height: 0.012, depth: variant === 'carrier' ? 0.18 : 0.14 },
+    scene,
+  )
+  accentStrip.parent = shipVisual
+  accentStrip.position.y = 0.022
+  accentStrip.position.z = variant === 'carrier' ? -0.01 : 0.01
+  const accentMat = new StandardMaterial(`ship-accent-mat-${id}`, scene)
+  accentMat.emissiveColor = Color3.FromHexString(accent).scale(0.88)
+  accentMat.disableLighting = true
+  accentMat.alpha = 0.82
+  accentStrip.material = accentMat
+
+  const enginePositions = variant === 'carrier' ? [-0.07, 0, 0.07] : [-0.04, 0.04]
   enginePositions.forEach((xPos, idx) => {
     const nozzle = MeshBuilder.CreateCylinder(
       `ship-nozzle-${id}-${idx}`,
@@ -731,6 +869,63 @@ export function PlanetSceneBabylon({
       planetMat.emissiveColor = Color3.FromHexString('#ffd38b').scale(0.22)
     }
     planet.material = planetMat
+
+    const detailLayer = MeshBuilder.CreateSphere(
+      'planet-detail',
+      { diameter: 3.005, segments: forceLow ? 44 : 72 },
+      scene,
+    )
+    detailLayer.parent = planetPivot
+    const detailMat = new StandardMaterial('planet-detail-mat', scene)
+    detailMat.diffuseTexture = makeDetailOverlay(scene, planetId, planetSeed * 57)
+    detailMat.emissiveTexture = detailMat.diffuseTexture
+    detailMat.emissiveColor = Color3.FromHexString(theme.cloud).scale(planetId === 'black-hole' ? 0.42 : 0.22)
+    detailMat.alpha = planetId === 'gas-giant' ? 0.5 : planetId === 'ice-world' ? 0.58 : 0.46
+    detailMat.backFaceCulling = false
+    detailLayer.material = detailMat
+
+    if (planetId === 'gas-giant') {
+      const gasRing = MeshBuilder.CreateTorus(
+        'planet-gas-ring',
+        { diameter: 4.6, thickness: 0.08, tessellation: forceLow ? 56 : 88 },
+        scene,
+      )
+      gasRing.parent = planetPivot
+      gasRing.rotation.x = Math.PI * 0.52
+      const gasRingMat = new StandardMaterial('planet-gas-ring-mat', scene)
+      gasRingMat.emissiveColor = Color3.FromHexString('#fbbf24').scale(0.42)
+      gasRingMat.alpha = 0.45
+      gasRing.material = gasRingMat
+    } else if (planetId === 'ice-world') {
+      const iceArc = MeshBuilder.CreateTorus(
+        'planet-ice-arc',
+        { diameter: 3.8, thickness: 0.025, tessellation: forceLow ? 44 : 72 },
+        scene,
+      )
+      iceArc.parent = planetPivot
+      iceArc.rotation.x = Math.PI * 0.32
+      iceArc.rotation.y = Math.PI * 0.22
+      const iceArcMat = new StandardMaterial('planet-ice-arc-mat', scene)
+      iceArcMat.emissiveColor = Color3.FromHexString('#bae6fd').scale(0.48)
+      iceArcMat.alpha = 0.36
+      iceArc.material = iceArcMat
+    } else if (planetId === 'ancient-ruins') {
+      for (let i = 0; i < 6; i += 1) {
+        const theta = (i / 6) * Math.PI * 2 + (planetSeed % 17) * 0.11
+        const spire = MeshBuilder.CreateCylinder(
+          `planet-spire-${i}`,
+          { height: 0.24 + (i % 3) * 0.04, diameterTop: 0.01, diameterBottom: 0.05, tessellation: 8 },
+          scene,
+        )
+        spire.parent = planetPivot
+        spire.position.set(Math.cos(theta) * 1.34, Math.sin(theta * 0.6) * 0.52, Math.sin(theta) * 1.34)
+        spire.lookAt(Vector3.Zero())
+        const spireMat = new StandardMaterial(`planet-spire-mat-${i}`, scene)
+        spireMat.diffuseColor = Color3.FromHexString('#d97706')
+        spireMat.emissiveColor = Color3.FromHexString('#451a03').scale(0.35)
+        spire.material = spireMat
+      }
+    }
 
     const clouds = MeshBuilder.CreateSphere('clouds', { diameter: 3.06, segments: forceLow ? 42 : 64 }, scene)
     clouds.parent = planetPivot
