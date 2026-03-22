@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import type { AsteroidParticle } from './Asteroid'
+
+const LazyPlanetScene3D = lazy(() =>
+  import('./PlanetScene3D').then((module) => ({ default: module.PlanetScene3D })),
+)
 
 export type Planet = {
   id: string
@@ -50,8 +54,10 @@ export function PlanetMap({
   const stageRef = useRef<HTMLDivElement | null>(null)
   const [planetTransition, setPlanetTransition] = useState(false)
   const cameraTargetRef = useRef({ x: 0, y: 0 })
-  const cameraCurrentRef = useRef({ x: 0, y: 0 })
   const lastInputAtRef = useRef(0)
+  const reducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const activePlanet =
     planets.find((planet) => planet.id === activePlanetId) ?? planets[0]
 
@@ -78,41 +84,6 @@ export function PlanetMap({
     }
     lastInputAtRef.current = Date.now()
   }
-
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-    let rafId = 0
-    const render = () => {
-      const now = Date.now()
-      const idleMode = now - lastInputAtRef.current > 1400
-      const autoTarget = idleMode
-        ? {
-            x: Math.sin(now * 0.00028) * 0.5,
-            y: Math.cos(now * 0.00023) * 0.38,
-          }
-        : cameraTargetRef.current
-      cameraCurrentRef.current.x += (autoTarget.x - cameraCurrentRef.current.x) * 0.06
-      cameraCurrentRef.current.y += (autoTarget.y - cameraCurrentRef.current.y) * 0.06
-
-      const rotateX = -cameraCurrentRef.current.y * 6
-      const rotateY = cameraCurrentRef.current.x * 8
-      const shiftX = cameraCurrentRef.current.x * 11
-      const shiftY = cameraCurrentRef.current.y * 7
-
-      stage.style.setProperty('--cam-rotate-x', `${rotateX.toFixed(2)}deg`)
-      stage.style.setProperty('--cam-rotate-y', `${rotateY.toFixed(2)}deg`)
-      stage.style.setProperty('--cam-shift-x', `${shiftX.toFixed(2)}px`)
-      stage.style.setProperty('--cam-shift-y', `${shiftY.toFixed(2)}px`)
-
-      rafId = window.requestAnimationFrame(render)
-    }
-
-    rafId = window.requestAnimationFrame(render)
-    return () => window.cancelAnimationFrame(rafId)
-  }, [])
 
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-4">
@@ -159,92 +130,51 @@ export function PlanetMap({
             lastInputAtRef.current = 0
           }}
         >
-          <div className="planet-camera-rig">
-            <div
-              ref={planetRef}
-              className={`planet-core ${activePlanet.objectClass} ${isTapBurst ? 'tap-burst' : ''} ${
-                planetTransition ? 'planet-transition' : ''
-              } ${auraActive ? 'artifact-aura' : ''}`}
-              onClick={(event) => onTap(event.clientX, event.clientY)}
-              onTouchStart={(event) => {
-                event.preventDefault()
-                const firstTouch = event.touches[0]
-                if (!firstTouch) return
-                onTap(firstTouch.clientX, firstTouch.clientY)
-              }}
-            >
-              <span className={`planet-rotation-layer spin-${activePlanet.id}`} />
-              <span className={`planet-cloud-layer cloud-${activePlanet.id}`} />
-              <span className="planet-atmo-ring" />
-              <span className="planet-cinematic-haze" />
-              <span className="planet-night-shadow" />
-              {particles.map((particle) => (
-                <div
-                  key={particle.id}
-                  className="particle"
-                  style={
-                    {
-                      left: `${particle.x}px`,
-                      top: `${particle.y}px`,
-                      width: `${particle.size}px`,
-                      height: `${particle.size}px`,
-                      '--dx': `${particle.dx}px`,
-                      '--dy': `${particle.dy}px`,
-                    } as CSSProperties
-                  }
-                />
-              ))}
-              <span className="planet-emblem">
-                <img src={activePlanet.icon} alt={activePlanet.name} />
-              </span>
-            </div>
+          <div className="planet-canvas-wrap">
+            <Suspense fallback={<div className={`planet-scene-fallback ${activePlanet.objectClass}`} />}>
+              <LazyPlanetScene3D
+                planetId={activePlanet.id}
+                ships={ships}
+                auraActive={auraActive}
+                pointerRef={cameraTargetRef}
+                lastInputAtRef={lastInputAtRef}
+                reducedMotion={reducedMotion}
+              />
+            </Suspense>
+          </div>
 
-            {/* Визуал флота вокруг активной планеты */}
-            <div className="ship-ring">
-              {ships.map((ship, index) => {
-                const orbitSize = 278 + index * 34
-                const orbitDuration = 10.5 + index * 2.6
-                const orbitDirection = index % 2 === 0 ? 'normal' : 'reverse'
-                const shipScale = 1 + Math.min(ship.level, 40) * 0.01
-                const glowAlpha = Math.min(0.78, 0.3 + ship.level * 0.02)
-                const orbitTilt = 48 + (index % 3) * 12
-                const orbitSpin = index * 37
-                const orbitEccentricity = 0.72 + (index % 4) * 0.08
-
-                return (
-                  <div
-                    key={ship.id}
-                    className="ship-orbit-shell"
-                    style={
-                      {
-                        '--orbit-size': `${orbitSize}px`,
-                        '--orbit-duration': `${orbitDuration}s`,
-                        '--orbit-direction': orbitDirection,
-                        '--ship-scale': shipScale.toFixed(2),
-                        '--ship-glow': `rgba(56, 189, 248, ${glowAlpha.toFixed(2)})`,
-                      '--orbit-tilt': `${orbitTilt}deg`,
-                      '--orbit-spin': `${orbitSpin}deg`,
-                      '--orbit-eccentricity': orbitEccentricity.toFixed(2),
-                      } as CSSProperties
-                    }
-                    title={`${ship.name} Lv.${ship.level}`}
-                  >
-                    <span className="ship-orbit-line" />
-                    <div className="ship-orbit-rotator" style={{ animationDelay: `${index * 0.7}s` }}>
-                      <span className="ship-satellite">
-                        <span className="ship-satellite-wing ship-satellite-wing-left" />
-                        <span className="ship-satellite-wing ship-satellite-wing-right" />
-                        <span className="ship-satellite-core">
-                          <img src={ship.icon} alt={ship.name} className="ship-icon" />
-                        </span>
-                        <span className="ship-satellite-glow" />
-                        <small className="ship-level">Lv.{ship.level}</small>
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+          <div
+            ref={planetRef}
+            className={`planet-hit-surface ${isTapBurst ? 'tap-burst' : ''} ${
+              planetTransition ? 'planet-transition' : ''
+            } ${auraActive ? 'artifact-aura' : ''}`}
+            onClick={(event) => onTap(event.clientX, event.clientY)}
+            onTouchStart={(event) => {
+              event.preventDefault()
+              const firstTouch = event.touches[0]
+              if (!firstTouch) return
+              onTap(firstTouch.clientX, firstTouch.clientY)
+            }}
+          >
+            {particles.map((particle) => (
+              <div
+                key={particle.id}
+                className="particle"
+                style={
+                  {
+                    left: `${particle.x}px`,
+                    top: `${particle.y}px`,
+                    width: `${particle.size}px`,
+                    height: `${particle.size}px`,
+                    '--dx': `${particle.dx}px`,
+                    '--dy': `${particle.dy}px`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+            <span className="planet-emblem">
+              <img src={activePlanet.icon} alt={activePlanet.name} />
+            </span>
           </div>
         </div>
       </div>

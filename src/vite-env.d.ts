@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="@react-three/fiber" />
 
 interface ImportMetaEnv {
   readonly TON_CONNECT_MANIFEST_URL?: string

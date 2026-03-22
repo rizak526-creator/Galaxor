@@ -194,6 +194,38 @@ body {
   padding-inline: 6px;
 }
 
+.planet-canvas-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.planet-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.planet-scene-fallback {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--planet-size);
+  height: var(--planet-size);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.planet-hit-surface {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--planet-size);
+  height: var(--planet-size);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 .planet-camera-rig {
   position: relative;
   width: 100%;
@@ -222,6 +254,7 @@ body {
     inset 0 -16px 30px rgba(2, 6, 23, 0.33);
   isolation: isolate;
   transform: translateZ(24px);
+  z-index: 4;
 }
 
 .planet-core::before {
@@ -496,10 +529,11 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px dashed rgba(148, 163, 184, 0.34);
+  border: 1px dashed rgba(148, 163, 184, 0.24);
   box-shadow:
-    inset 0 0 14px rgba(56, 189, 248, 0.2),
-    0 0 16px rgba(56, 189, 248, 0.14);
+    inset 0 0 10px rgba(56, 189, 248, 0.14),
+    0 0 10px rgba(56, 189, 248, 0.1);
+  z-index: 1;
 }
 
 .ship-orbit-rotator {
@@ -516,15 +550,16 @@ body {
   transform: translate(-50%, -50%) scale(var(--ship-scale, 1));
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   transform-style: preserve-3d;
-  animation: satelliteAttitude 3.8s ease-in-out infinite;
+  animation: satelliteAttitude 3.8s ease-in-out infinite, satelliteDepth 10s linear infinite;
+  z-index: 7;
 }
 
 .ship-satellite-core {
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -552,8 +587,8 @@ body {
 
 .ship-satellite-wing {
   position: absolute;
-  width: 13px;
-  height: 6px;
+  width: 17px;
+  height: 8px;
   border-radius: 6px;
   background:
     linear-gradient(90deg, rgba(148, 163, 184, 0.7), rgba(56, 189, 248, 0.45));
@@ -566,19 +601,19 @@ body {
 }
 
 .ship-satellite-wing-left {
-  left: 3px;
+  left: 2px;
   transform: translateY(-50%) rotateY(28deg) translateZ(1px);
 }
 
 .ship-satellite-wing-right {
-  right: 3px;
+  right: 2px;
   transform: translateY(-50%) rotateY(-28deg) translateZ(1px);
 }
 
 .ship-satellite-glow {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   background: radial-gradient(circle, var(--ship-glow, rgba(56, 189, 248, 0.35)) 0%, transparent 70%);
   filter: blur(3px);
@@ -588,7 +623,7 @@ body {
 
 .ship-level {
   position: absolute;
-  top: 22px;
+  top: 27px;
   right: -8px;
   font-size: 0.5rem;
   font-weight: 700;
@@ -600,8 +635,8 @@ body {
 }
 
 .ship-icon {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   display: block;
   filter: drop-shadow(0 0 3px rgba(147, 197, 253, 0.55));
   transform: translateZ(2px);
@@ -658,6 +693,21 @@ body {
   }
   100% {
     transform: translate(-50%, -50%) scale(var(--ship-scale, 1)) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+@keyframes satelliteDepth {
+  0% {
+    filter: brightness(1.12);
+    opacity: 1;
+  }
+  50% {
+    filter: brightness(0.64);
+    opacity: 0.78;
+  }
+  100% {
+    filter: brightness(1.12);
+    opacity: 1;
   }
 }
 
