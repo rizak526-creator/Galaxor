@@ -1731,19 +1731,19 @@ function App() {
           screenShake ? 'screen-shake' : ''
         }`}
       >
-        <p className="text-center text-sm text-slate-300">
-          {username ? `Пилот: @${username}` : 'Пилот: имя пользователя недоступно'}
-        </p>
+        <div className="hero-intro mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+          {username && <p className="hero-pilot text-sm text-slate-300">{`Пилот: @${username}`}</p>}
 
-        <h1 className="mt-2 text-center text-5xl font-black tracking-wide text-white sm:text-6xl galaxor-glow">
-          Galaxor
-        </h1>
-        <p className="mt-3 text-center text-sm text-slate-200/95">
-          Idle-стратегия космической добычи ресурсов
-        </p>
+          <h1 className="hero-title mt-2 text-5xl font-black tracking-wide text-white sm:text-6xl galaxor-glow">
+            Galaxor
+          </h1>
+          <p className="hero-subtitle mt-3 text-sm text-slate-200/95">
+            Стратегия космической добычи ресурсов
+          </p>
 
-        <div className="mt-6 flex justify-center">
-          <TonConnectButton className="!w-full max-w-xs" />
+          <div className="mt-6 flex w-full justify-center">
+            <TonConnectButton className="!w-full max-w-xs" />
+          </div>
         </div>
 
         {!walletConnected ? (
