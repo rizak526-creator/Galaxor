@@ -12,7 +12,12 @@ const manifestUrl =
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {/* Провайдер нужен для TonConnectButton и хуков кошелька. */}
-    <TonConnectUIProvider manifestUrl={manifestUrl}>
+    <TonConnectUIProvider
+      manifestUrl={manifestUrl}
+      language="ru"
+      restoreConnection={false}
+      analytics={{ mode: 'off' }}
+    >
       <App />
     </TonConnectUIProvider>
   </StrictMode>,
