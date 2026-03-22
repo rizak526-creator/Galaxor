@@ -70,3 +70,47 @@ body {
     0 0 24px rgba(125, 211, 252, 0.8),
     0 0 48px rgba(37, 99, 235, 0.65);
 }
+
+.asteroid {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, #ffeb3b, #f57c00);
+  border-radius: 50%;
+  box-shadow: 0 0 40px #ffeb3b;
+  transition: transform 0.18s;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.asteroid:active {
+  transform: scale(1.25);
+}
+
+.tap-burst {
+  transform: scale(1.25);
+}
+
+.particle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #ffeb3b;
+  border-radius: 50%;
+  animation: burst 0.8s forwards;
+  pointer-events: none;
+}
+
+@keyframes burst {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
