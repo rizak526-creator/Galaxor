@@ -136,6 +136,16 @@ body {
     0 0 20px rgba(56, 189, 248, 0.3);
 }
 
+.wallet-connect-row {
+  width: 100%;
+}
+
+.wallet-connect-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .stat-card {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;

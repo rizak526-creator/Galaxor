@@ -1741,8 +1741,8 @@ function App() {
             Стратегия космической добычи ресурсов
           </p>
 
-          <div className="mt-6 flex w-full justify-center">
-            <TonConnectButton className="!mx-auto !w-full !max-w-xs" />
+          <div className="wallet-connect-row mt-6 mx-auto flex w-full max-w-xl justify-center">
+            <TonConnectButton className="wallet-connect-btn !mx-auto !w-auto !min-w-[220px] !max-w-xs" />
           </div>
         </div>
 
