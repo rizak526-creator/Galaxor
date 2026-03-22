@@ -34,6 +34,7 @@ type PlanetMapProps = {
   activePlanetId: string
   ships: FleetShip[]
   isTapBurst: boolean
+  tapBurstTick: number
   particles: AsteroidParticle[]
   auraActive?: boolean
   onSelectPlanet: (planetId: string) => void
@@ -45,6 +46,7 @@ export function PlanetMap({
   activePlanetId,
   ships,
   isTapBurst,
+  tapBurstTick,
   particles,
   auraActive = false,
   onSelectPlanet,
@@ -137,6 +139,7 @@ export function PlanetMap({
                 ships={ships}
                 auraActive={auraActive}
                 isTapBurst={isTapBurst}
+                tapBurstTick={tapBurstTick}
                 pointerRef={cameraTargetRef}
                 lastInputAtRef={lastInputAtRef}
                 reducedMotion={reducedMotion}

@@ -2,7 +2,7 @@ import { Environment, Sparkles, Stars } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import type { FleetShip } from './PlanetMap'
 
@@ -11,6 +11,7 @@ type PlanetScene3DProps = {
   ships: FleetShip[]
   auraActive?: boolean
   isTapBurst?: boolean
+  tapBurstTick?: number
   pointerRef: MutableRefObject<{ x: number; y: number }>
   lastInputAtRef: MutableRefObject<number>
   reducedMotion: boolean
@@ -34,6 +35,9 @@ type PlanetVisual = {
   cloudOpacity: number
   emissiveIntensity: number
 }
+
+type QualityMode = 'auto' | 'low' | 'high'
+type QualityPreset = 'low' | 'high'
 
 type PlanetCinematic = {
   cameraZ: number
@@ -76,12 +80,12 @@ const THEMES: Record<string, Theme> = {
     orbit: '#7dd3fc',
   },
   'gas-giant': {
-    base: '#f97316',
-    secondary: '#b45309',
-    emissive: '#fdba74',
-    cloud: '#fed7aa',
-    ring: '#fb923c',
-    orbit: '#fdba74',
+    base: '#b97945',
+    secondary: '#6f3f25',
+    emissive: '#d9a066',
+    cloud: '#f6d3b2',
+    ring: '#c98a57',
+    orbit: '#e8b686',
   },
   nebula: {
     base: '#7c3aed',
@@ -119,11 +123,21 @@ const THEMES: Record<string, Theme> = {
 
 const PLANET_VISUALS: Record<string, PlanetVisual> = {
   'earth-like': { radius: 1.45, shapeScale: [1, 1, 1], roughness: 0.56, metalness: 0.08, clearcoat: 1, cloudOpacity: 0.22, emissiveIntensity: 0.2 },
-  'gas-giant': { radius: 1.78, shapeScale: [1.08, 0.9, 1.08], roughness: 0.78, metalness: 0.03, clearcoat: 0.68, cloudOpacity: 0.3, emissiveIntensity: 0.14 },
-  nebula: { radius: 1.36, shapeScale: [0.92, 1.12, 0.92], roughness: 0.34, metalness: 0.16, clearcoat: 1, cloudOpacity: 0.4, emissiveIntensity: 0.34 },
-  'black-hole': { radius: 1.1, shapeScale: [1, 0.86, 1], roughness: 0.24, metalness: 0.36, clearcoat: 0.2, cloudOpacity: 0.04, emissiveIntensity: 0.5 },
-  'ice-world': { radius: 1.52, shapeScale: [1.02, 1.06, 1.02], roughness: 0.28, metalness: 0.24, clearcoat: 1, cloudOpacity: 0.12, emissiveIntensity: 0.26 },
-  'ancient-ruins': { radius: 1.64, shapeScale: [1.04, 0.94, 1.04], roughness: 0.74, metalness: 0.12, clearcoat: 0.52, cloudOpacity: 0.09, emissiveIntensity: 0.2 },
+  'gas-giant': { radius: 1.78, shapeScale: [1, 1, 1], roughness: 0.78, metalness: 0.03, clearcoat: 0.68, cloudOpacity: 0.3, emissiveIntensity: 0.14 },
+  nebula: { radius: 1.36, shapeScale: [1, 1, 1], roughness: 0.34, metalness: 0.16, clearcoat: 1, cloudOpacity: 0.4, emissiveIntensity: 0.34 },
+  'black-hole': { radius: 1.1, shapeScale: [1, 1, 1], roughness: 0.24, metalness: 0.36, clearcoat: 0.2, cloudOpacity: 0.04, emissiveIntensity: 0.5 },
+  'ice-world': { radius: 1.52, shapeScale: [1, 1, 1], roughness: 0.28, metalness: 0.24, clearcoat: 1, cloudOpacity: 0.12, emissiveIntensity: 0.26 },
+  'ancient-ruins': { radius: 1.64, shapeScale: [1, 1, 1], roughness: 0.74, metalness: 0.12, clearcoat: 0.52, cloudOpacity: 0.09, emissiveIntensity: 0.2 },
+}
+
+function resolveQualityMode(): QualityMode {
+  const envValue = import.meta.env.VITE_QUALITY_MODE?.toLowerCase()
+  if (envValue === 'low' || envValue === 'high' || envValue === 'auto') return envValue
+  if (typeof window !== 'undefined') {
+    const saved = window.localStorage.getItem('galaxor_quality_mode')?.toLowerCase()
+    if (saved === 'low' || saved === 'high' || saved === 'auto') return saved
+  }
+  return 'auto'
 }
 
 const PLANET_CINEMATIC: Record<string, PlanetCinematic> = {
@@ -143,11 +157,11 @@ const PLANET_CINEMATIC: Record<string, PlanetCinematic> = {
     cameraZ: 8.6,
     cameraY: 0.14,
     cameraFov: 38,
-    ambient: 0.4,
-    hemiColor: '#fed7aa',
-    keyLightColor: '#fff7ed',
+    ambient: 0.42,
+    hemiColor: '#f6d3b2',
+    keyLightColor: '#fff3e5',
     keyLightIntensity: 1.18,
-    fillLightColor: '#fdba74',
+    fillLightColor: '#d9a066',
     fillLightIntensity: 0.28,
     bloom: 0.74,
   },
@@ -295,11 +309,24 @@ function createPlanetTexture(planetId: string, theme: Theme): THREE.CanvasTextur
   if (planetId === 'earth-like') {
     paintBlobs(14, '#22c55e', '#16a34a', 0.3)
   } else if (planetId === 'gas-giant') {
-    ctx.globalAlpha = 0.3
-    for (let i = 0; i < 20; i += 1) {
-      const y = (i / 20) * canvas.height
-      ctx.fillStyle = i % 2 === 0 ? '#fcd34d' : '#fb923c'
+    ctx.globalAlpha = 0.34
+    for (let i = 0; i < 22; i += 1) {
+      const y = (i / 22) * canvas.height
+      ctx.fillStyle = i % 2 === 0 ? '#d3a476' : '#9d633d'
       ctx.fillRect(0, y, canvas.width, 14 + Math.sin(i * 0.7) * 6)
+    }
+    ctx.globalAlpha = 0.22
+    for (let i = 0; i < 14; i += 1) {
+      const x = Math.random() * canvas.width
+      const y = Math.random() * canvas.height
+      const r = 20 + Math.random() * 46
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+      g.addColorStop(0, '#f6d3b2')
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = g
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.fill()
     }
     ctx.globalAlpha = 1
   } else if (planetId === 'nebula') {
@@ -464,12 +491,20 @@ function PlanetDecor({ planetId }: { planetId: string }) {
     return (
       <group>
         <mesh rotation={[Math.PI / 2.5, 0.22, 0]}>
-          <torusGeometry args={[2.18, 0.11, 18, 170]} />
-          <meshStandardMaterial color="#fdba74" transparent opacity={0.45} roughness={0.5} metalness={0.2} />
+          <torusGeometry args={[2.2, 0.11, 20, 170]} />
+          <meshStandardMaterial color="#c98a57" transparent opacity={0.5} roughness={0.48} metalness={0.22} />
         </mesh>
-        <mesh position={[0.75, 0.15, 1.36]}>
-          <sphereGeometry args={[0.16, 20, 20]} />
-          <meshStandardMaterial color="#ef4444" emissive="#f97316" emissiveIntensity={0.42} />
+        <mesh position={[0.88, 0.22, 1.32]}>
+          <sphereGeometry args={[0.12, 20, 20]} />
+          <meshStandardMaterial color="#f6d3b2" emissive="#d9a066" emissiveIntensity={0.28} />
+        </mesh>
+        <mesh position={[-1.84, -0.36, -0.66]}>
+          <sphereGeometry args={[0.09, 18, 18]} />
+          <meshStandardMaterial color="#caa07c" emissive="#8a5d3e" emissiveIntensity={0.18} />
+        </mesh>
+        <mesh position={[1.72, -0.44, -0.9]}>
+          <sphereGeometry args={[0.07, 18, 18]} />
+          <meshStandardMaterial color="#b07a54" emissive="#7c4f32" emissiveIntensity={0.16} />
         </mesh>
       </group>
     )
@@ -578,10 +613,10 @@ function PlanetBiomeFx({
   if (planetId === 'gas-giant') {
     return (
       <group ref={spinRef}>
-        <Sparkles count={54} size={2.8} speed={0.48} scale={[5.4, 5.4, 5.4]} color="#fb923c" opacity={0.54} />
+        <Sparkles count={42} size={2.4} speed={0.32} scale={[5.2, 5.2, 5.2]} color="#d9a066" opacity={0.38} />
         <mesh ref={pulseRef} position={[0.86, 0.22, 1.38]}>
           <sphereGeometry args={[0.18, 16, 16]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.48} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#d9a066" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
         </mesh>
       </group>
     )
@@ -666,11 +701,18 @@ function SceneContent({
   planetId,
   ships,
   auraActive = false,
-  isTapBurst = false,
+  tapBurstTick = 0,
   pointerRef,
   lastInputAtRef,
   reducedMotion,
-}: PlanetScene3DProps) {
+  qualityMode,
+  qualityPreset,
+  onAutoQualityChange,
+}: PlanetScene3DProps & {
+  qualityMode: QualityMode
+  qualityPreset: QualityPreset
+  onAutoQualityChange: (next: QualityPreset) => void
+}) {
   const planetGroupRef = useRef<THREE.Group | null>(null)
   const planetRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhysicalMaterial> | null>(null)
   const cloudsRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial> | null>(null)
@@ -683,7 +725,16 @@ function SceneContent({
   const bankRefs = useRef<number[]>([])
   const pitchRefs = useRef<number[]>([])
   const cameraSmoothingRef = useRef({ x: 0, y: 0 })
-  const tapScaleTargetRef = useRef(1)
+  const tapScaleRef = useRef(1)
+  const tapVelocityRef = useRef(0)
+  const tapGlowRef = useRef(0)
+  const fpsProbeRef = useRef({
+    elapsed: 0,
+    frames: 0,
+    lowStreak: 0,
+    highStreak: 0,
+    applied: qualityPreset,
+  })
   const theme = THEMES[planetId] ?? THEMES['earth-like']
   const visual = PLANET_VISUALS[planetId] ?? PLANET_VISUALS['earth-like']
   const cinematic = PLANET_CINEMATIC[planetId] ?? PLANET_CINEMATIC['earth-like']
@@ -695,14 +746,26 @@ function SceneContent({
   })
   const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
   const planetRadius = visual.radius
+  const qualityIsLow = reducedMotion || qualityPreset === 'low'
+  const starCount = qualityIsLow ? 420 : 1300
+  const sparklesCount = qualityIsLow ? 12 : 30
+  const sceneSegments = qualityIsLow ? 64 : 96
+  const cloudSegments = qualityIsLow ? 42 : 64
+  const fxSegments = qualityIsLow ? 34 : 48
 
   useEffect(() => {
-    tapScaleTargetRef.current = isTapBurst ? 1.06 : 1
-  }, [isTapBurst])
+    const impulse = reducedMotion ? 0.28 : 0.44
+    tapVelocityRef.current += impulse
+    tapGlowRef.current = Math.min(1, tapGlowRef.current + 0.45)
+  }, [reducedMotion, tapBurstTick])
 
   useEffect(() => {
     lightBlendRef.current = { ...lightBlendRef.current, ...cinematic }
   }, [cinematic])
+
+  useEffect(() => {
+    fpsProbeRef.current.applied = qualityPreset
+  }, [qualityPreset])
 
   const orbitParams = useMemo(
     () =>
@@ -734,6 +797,37 @@ function SceneContent({
   )
 
   useFrame((state, delta) => {
+    if (qualityMode === 'auto' && !reducedMotion) {
+      fpsProbeRef.current.elapsed += delta
+      fpsProbeRef.current.frames += 1
+      if (fpsProbeRef.current.elapsed >= 1) {
+        const fps = fpsProbeRef.current.frames / fpsProbeRef.current.elapsed
+        fpsProbeRef.current.elapsed = 0
+        fpsProbeRef.current.frames = 0
+        if (fps < 43) {
+          fpsProbeRef.current.lowStreak += 1
+          fpsProbeRef.current.highStreak = 0
+        } else if (fps > 56) {
+          fpsProbeRef.current.highStreak += 1
+          fpsProbeRef.current.lowStreak = 0
+        } else {
+          fpsProbeRef.current.lowStreak = 0
+          fpsProbeRef.current.highStreak = 0
+        }
+
+        if (fpsProbeRef.current.lowStreak >= 2 && fpsProbeRef.current.applied !== 'low') {
+          fpsProbeRef.current.applied = 'low'
+          onAutoQualityChange('low')
+        } else if (
+          fpsProbeRef.current.highStreak >= 3 &&
+          fpsProbeRef.current.applied !== 'high'
+        ) {
+          fpsProbeRef.current.applied = 'high'
+          onAutoQualityChange('high')
+        }
+      }
+    }
+
     const t = state.clock.elapsedTime
     const now = Date.now()
     const idleMode = now - lastInputAtRef.current > 1400
@@ -769,13 +863,17 @@ function SceneContent({
     }
     cam.lookAt(0, 0, 0)
 
+    const springStiffness = reducedMotion ? 14 : 22
+    const springDamping = reducedMotion ? 8 : 11
+    const displacement = 1 - tapScaleRef.current
+    tapVelocityRef.current +=
+      (displacement * springStiffness - tapVelocityRef.current * springDamping) * delta
+    tapScaleRef.current += tapVelocityRef.current * delta
+    tapScaleRef.current = THREE.MathUtils.clamp(tapScaleRef.current, 0.96, 1.13)
+    tapGlowRef.current = Math.max(0, tapGlowRef.current - delta * (reducedMotion ? 1.7 : 2.4))
+
     if (planetGroupRef.current) {
-      const next = THREE.MathUtils.lerp(
-        planetGroupRef.current.scale.x,
-        tapScaleTargetRef.current,
-        0.22,
-      )
-      planetGroupRef.current.scale.setScalar(next)
+      planetGroupRef.current.scale.setScalar(tapScaleRef.current)
     }
 
     lightBlendRef.current.ambient = THREE.MathUtils.lerp(lightBlendRef.current.ambient, cinematic.ambient, 0.08)
@@ -796,12 +894,17 @@ function SceneContent({
     if (planetRef.current) {
       planetRef.current.rotation.y += delta * planetSpin
       planetRef.current.rotation.z = Math.sin(t * 0.2) * 0.02
+      planetRef.current.material.emissiveIntensity =
+        visual.emissiveIntensity + tapGlowRef.current * (reducedMotion ? 0.08 : 0.18)
       if (planetRef.current.material.map) {
         planetRef.current.material.map.offset.x += delta * (reducedMotion ? 0.001 : 0.004)
       }
     }
     if (cloudsRef.current) cloudsRef.current.rotation.y += delta * cloudSpin
-    if (auraRef.current) auraRef.current.rotation.y += delta * 0.08
+    if (auraRef.current) {
+      auraRef.current.rotation.y += delta * 0.08
+      auraRef.current.material.opacity = 0.12 + tapGlowRef.current * 0.16
+    }
 
     for (let i = 0; i < orbitParams.length; i += 1) {
       const sat = satelliteRefs.current[i]
@@ -879,20 +982,20 @@ function SceneContent({
         color={cinematic.fillLightColor}
       />
       <pointLight position={[-3.4, -2.2, 2.4]} intensity={0.7} color={theme.ring} />
-      <Stars radius={36} depth={62} count={reducedMotion ? 380 : 1300} factor={2.2} fade speed={0.32} />
+      <Stars radius={36} depth={62} count={starCount} factor={2.2} fade speed={qualityIsLow ? 0.2 : 0.32} />
       <Sparkles
-        count={reducedMotion ? 10 : 30}
-        size={2.3}
-        speed={0.18}
+        count={sparklesCount}
+        size={qualityIsLow ? 1.7 : 2.3}
+        speed={qualityIsLow ? 0.12 : 0.18}
         scale={[9, 9, 9]}
         color={theme.ring}
-        opacity={0.34}
+        opacity={qualityIsLow ? 0.24 : 0.34}
       />
-      <Environment preset="sunset" />
+      {!qualityIsLow && <Environment preset="sunset" />}
 
       <group ref={planetGroupRef}>
         <mesh ref={planetRef} scale={visual.shapeScale}>
-          <sphereGeometry args={[planetRadius, 96, 96]} />
+          <sphereGeometry args={[planetRadius, sceneSegments, sceneSegments]} />
           <meshPhysicalMaterial
             map={surfaceMap}
             color={theme.base}
@@ -907,7 +1010,7 @@ function SceneContent({
           />
         </mesh>
         <mesh rotation={[0, 0, -0.2]} scale={visual.shapeScale}>
-          <sphereGeometry args={[planetRadius + 0.01, 64, 64]} />
+          <sphereGeometry args={[planetRadius + 0.01, cloudSegments, cloudSegments]} />
           <meshStandardMaterial color={theme.cloud} transparent opacity={0.04} roughness={0.55} metalness={0.06} />
         </mesh>
         <mesh
@@ -918,7 +1021,7 @@ function SceneContent({
             1.055 * visual.shapeScale[2],
           ]}
         >
-          <sphereGeometry args={[planetRadius, 64, 64]} />
+          <sphereGeometry args={[planetRadius, cloudSegments, cloudSegments]} />
           <meshStandardMaterial
             color={theme.cloud}
             transparent
@@ -929,7 +1032,7 @@ function SceneContent({
           />
         </mesh>
         <mesh scale={[1.2 * visual.shapeScale[0], 1.2 * visual.shapeScale[1], 1.2 * visual.shapeScale[2]]}>
-          <sphereGeometry args={[planetRadius, 48, 48]} />
+          <sphereGeometry args={[planetRadius, fxSegments, fxSegments]} />
           <meshBasicMaterial color={theme.ring} transparent opacity={0.16} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
         </mesh>
         {auraActive && (
@@ -1005,7 +1108,7 @@ function SceneContent({
         </group>
       ))}
 
-      {!reducedMotion && (
+      {!qualityIsLow && (
         <EffectComposer>
           <Bloom
             intensity={lightBlendRef.current.bloom}
@@ -1022,15 +1125,36 @@ function SceneContent({
 }
 
 export function PlanetScene3D(props: PlanetScene3DProps) {
+  const qualityMode = useMemo(resolveQualityMode, [])
+  const [qualityPreset, setQualityPreset] = useState<QualityPreset>(() => {
+    if (props.reducedMotion || qualityMode === 'low') return 'low'
+    return 'high'
+  })
+
+  useEffect(() => {
+    if (props.reducedMotion || qualityMode === 'low') {
+      setQualityPreset('low')
+      return
+    }
+    if (qualityMode === 'high') setQualityPreset('high')
+  }, [props.reducedMotion, qualityMode])
+
   const cinematic = PLANET_CINEMATIC[props.planetId] ?? PLANET_CINEMATIC['earth-like']
+  const adaptiveQuality = props.reducedMotion ? 'low' : qualityPreset
+  const dprRange: [number, number] = adaptiveQuality === 'low' ? [1, 1.1] : [1, 1.5]
   return (
     <Canvas
       camera={{ position: [0, cinematic.cameraY, cinematic.cameraZ], fov: cinematic.cameraFov }}
-      dpr={[1, 1.5]}
-      gl={{ antialias: true, alpha: true }}
+      dpr={dprRange}
+      gl={{ antialias: adaptiveQuality !== 'low', alpha: true, powerPreference: 'high-performance' }}
       className="planet-canvas"
     >
-      <SceneContent {...props} />
+      <SceneContent
+        {...props}
+        qualityMode={qualityMode}
+        qualityPreset={adaptiveQuality}
+        onAutoQualityChange={setQualityPreset}
+      />
     </Canvas>
   )
 }

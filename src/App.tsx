@@ -415,6 +415,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabType>('shop')
   const [isTapBurst, setIsTapBurst] = useState(false)
+  const [tapBurstTick, setTapBurstTick] = useState(0)
   const [particles, setParticles] = useState<AsteroidParticle[]>([])
   const [toast, setToast] = useState<{ text: string; type: ToastType } | null>(
     null,
@@ -451,14 +452,10 @@ function App() {
   const activeChapter = CHAPTERS[currentChapter - 1] ?? CHAPTERS[0]
   const [screenShake, setScreenShake] = useState(false)
   const releaseMode = envFlag('VITE_RELEASE_MODE', false)
-  const soundsEnabled = envFlag('VITE_ENABLE_SOUNDS', true)
   const reducedEffects =
     releaseMode ||
     (typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  const tapAudioRef = useRef<HTMLAudioElement | null>(null)
-  const eventAudioRef = useRef<HTMLAudioElement | null>(null)
-  const expeditionAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const explorerLevel = ships.find((ship) => ship.id === 'explorer-scout')?.level ?? 0
   const miningLevel = ships.find((ship) => ship.id === 'mining-drone')?.level ?? 0
@@ -574,16 +571,6 @@ function App() {
     }, 1600)
   }
 
-  const playSound = (ref: { current: HTMLAudioElement | null }) => {
-    if (!soundsEnabled) return
-    const audio = ref.current
-    if (!audio) return
-    audio.currentTime = 0
-    audio.play().catch(() => {
-      // В браузерах autoplay может блокироваться до первого взаимодействия.
-    })
-  }
-
   const showEventNotice = (title: string, description: string) => {
     setEventNotice({ title, description, visible: true })
     if (eventNoticeTimerRef.current) window.clearTimeout(eventNoticeTimerRef.current)
@@ -652,19 +639,6 @@ function App() {
       // В браузере без Telegram игра продолжает работать в fallback-режиме.
     }
     return () => cleanupHandlers.forEach((handler) => handler())
-  }, [])
-
-  useEffect(() => {
-    // Базовые звуки через встроенные data-URI.
-    tapAudioRef.current = new Audio(
-      'data:audio/wav;base64,UklGRlYAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTIAAACAgoOEhYaGiImKiouMjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpA==',
-    )
-    eventAudioRef.current = new Audio(
-      'data:audio/wav;base64,UklGRmIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU4AAACAgYKEhYeIi4yPkpWYm56hoqWoq66xtLa5vL/CxcjLztHU19rd4OPm6ezv8vX4+w==',
-    )
-    expeditionAudioRef.current = new Audio(
-      'data:audio/wav;base64,UklGRl4AAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUoAAACAgYOGiIuOkZSWmJucn6Klp6qtsLO2ubzAw8bJzM/R1Nfa3eDj5uns7/L1+Pv+',
-    )
   }, [])
 
   useEffect(() => {
@@ -911,7 +885,6 @@ function App() {
           setScreenFlash(true)
           setScreenShake(true)
         }
-        playSound(eventAudioRef)
         if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current)
         flashTimerRef.current = window.setTimeout(
           () => setScreenFlash(false),
@@ -1100,17 +1073,25 @@ function App() {
   }, [])
 
   const spawnParticles = (x: number, y: number) => {
-    const count = reducedEffects
-      ? 2 + Math.floor(Math.random() * 2)
-      : 4 + Math.floor(Math.random() * 3)
-    const createdParticles: AsteroidParticle[] = Array.from({ length: count }, () => ({
-      id: particleIdRef.current++,
-      x,
-      y,
-      size: 8 + Math.floor(Math.random() * 8),
-      dx: Math.floor(Math.random() * 100 - 50),
-      dy: Math.floor(Math.random() * 100 - 50),
-    }))
+    const count = reducedEffects ? 4 : 8
+    const spread = reducedEffects ? 38 : 54
+    const createdParticles: AsteroidParticle[] = Array.from(
+      { length: count },
+      (_, index) => {
+        const angle = (index / count) * Math.PI * 2 + Math.random() * 0.2
+        const distance = spread * (0.65 + Math.random() * 0.45)
+        return {
+          id: particleIdRef.current++,
+          x,
+          y,
+          size: reducedEffects
+            ? 6 + Math.floor(Math.random() * 4)
+            : 8 + Math.floor(Math.random() * 6),
+          dx: Math.cos(angle) * distance,
+          dy: Math.sin(angle) * distance,
+        }
+      },
+    )
     setParticles((prev) => [...prev, ...createdParticles])
     window.setTimeout(() => {
       setParticles((prev) =>
@@ -1126,9 +1107,12 @@ function App() {
     setCrystals((prev) => prev + 1)
     setTotalEarned((prev) => prev + 1)
     setIsTapBurst(true)
-    playSound(tapAudioRef)
+    setTapBurstTick((prev) => prev + 1)
     if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current)
-    burstTimerRef.current = window.setTimeout(() => setIsTapBurst(false), 200)
+    burstTimerRef.current = window.setTimeout(
+      () => setIsTapBurst(false),
+      reducedEffects ? 140 : 180,
+    )
   }
 
   const handlePlanetTap = (x: number, y: number) => {
@@ -1141,11 +1125,14 @@ function App() {
     setTotalEarned((prev) => prev + roundedGain)
     setTapCount((prev) => prev + 1)
     setIsTapBurst(true)
-    playSound(tapAudioRef)
+    setTapBurstTick((prev) => prev + 1)
     spawnParticles(x, y)
 
     if (burstTimerRef.current) window.clearTimeout(burstTimerRef.current)
-    burstTimerRef.current = window.setTimeout(() => setIsTapBurst(false), 200)
+    burstTimerRef.current = window.setTimeout(
+      () => setIsTapBurst(false),
+      reducedEffects ? 140 : 180,
+    )
 
     const energyDropChance =
       BALANCE.drops.baseEnergyChance + activePlanet.tapBonus.energyChance
@@ -1427,7 +1414,6 @@ function App() {
       ),
     )
     pushHistory(`Завершена экспедиция: ${target.shipName}`)
-    playSound(expeditionAudioRef)
     showToast('Награда экспедиции получена', 'success')
   }
 
@@ -1471,7 +1457,11 @@ function App() {
                 onClick={handleBaseTap}
                 className={`asteroid ${isTapBurst ? 'tap-burst' : ''}`}
               >
-                <span className="planet-emoji">☀️</span>
+                <span className="starter-planet-bronze" />
+                <span className="starter-ring starter-ring-a" />
+                <span className="starter-ring starter-ring-b" />
+                <span className="starter-moon starter-moon-a" />
+                <span className="starter-moon starter-moon-b" />
               </button>
             </div>
           </div>
@@ -1498,6 +1488,7 @@ function App() {
               activePlanetId={currentPlanetId}
               ships={ships}
               isTapBurst={isTapBurst}
+              tapBurstTick={tapBurstTick}
               particles={particles}
               auraActive={setBonuses.fullSet}
               onSelectPlanet={setCurrentPlanetId}
