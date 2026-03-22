@@ -41,6 +41,9 @@ const LazyCommandCenter = lazy(() =>
 const LazyPlanetScene3D = lazy(() =>
   import('./components/PlanetScene3D').then((module) => ({ default: module.PlanetScene3D })),
 )
+const LazyPlanetSceneBabylon = lazy(() =>
+  import('./components/PlanetSceneBabylon').then((module) => ({ default: module.PlanetSceneBabylon })),
+)
 
 type InitDataState = {
   username: string | null
@@ -584,6 +587,8 @@ function App() {
   const activeChapter = CHAPTERS[currentChapter - 1] ?? CHAPTERS[0]
   const [screenShake, setScreenShake] = useState(false)
   const releaseMode = envFlag('VITE_RELEASE_MODE', false)
+  const planetEngineMode = (import.meta.env.VITE_PLANET_ENGINE ?? 'babylon').toLowerCase()
+  const useBabylonPlanet = planetEngineMode !== 'three'
   const reducedEffects =
     releaseMode ||
     (typeof window !== 'undefined' &&
@@ -1773,16 +1778,29 @@ function App() {
                     <div className="planet-scene-fallback planet-gas" />
                   }
                 >
-                  <LazyPlanetScene3D
-                    planetId={starterPlanetId}
-                    ships={starterSceneShips}
-                    auraActive={false}
-                    isTapBurst={isTapBurst}
-                    tapBurstTick={tapBurstTick}
-                    pointerRef={starterCameraTargetRef}
-                    lastInputAtRef={starterLastInputAtRef}
-                    reducedMotion={reducedEffects}
-                  />
+                  {useBabylonPlanet ? (
+                    <LazyPlanetSceneBabylon
+                      planetId={starterPlanetId}
+                      ships={starterSceneShips}
+                      auraActive={false}
+                      isTapBurst={isTapBurst}
+                      tapBurstTick={tapBurstTick}
+                      pointerRef={starterCameraTargetRef}
+                      lastInputAtRef={starterLastInputAtRef}
+                      reducedMotion={reducedEffects}
+                    />
+                  ) : (
+                    <LazyPlanetScene3D
+                      planetId={starterPlanetId}
+                      ships={starterSceneShips}
+                      auraActive={false}
+                      isTapBurst={isTapBurst}
+                      tapBurstTick={tapBurstTick}
+                      pointerRef={starterCameraTargetRef}
+                      lastInputAtRef={starterLastInputAtRef}
+                      reducedMotion={reducedEffects}
+                    />
+                  )}
                 </Suspense>
               </div>
               <div

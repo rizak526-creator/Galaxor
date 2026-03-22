@@ -5,6 +5,9 @@ import type { AsteroidParticle } from './Asteroid'
 const LazyPlanetScene3D = lazy(() =>
   import('./PlanetScene3D').then((module) => ({ default: module.PlanetScene3D })),
 )
+const LazyPlanetSceneBabylon = lazy(() =>
+  import('./PlanetSceneBabylon').then((module) => ({ default: module.PlanetSceneBabylon })),
+)
 
 export type Planet = {
   id: string
@@ -52,6 +55,8 @@ export function PlanetMap({
   onSelectPlanet,
   onTapPlanet,
 }: PlanetMapProps) {
+  const engineMode = (import.meta.env.VITE_PLANET_ENGINE ?? 'babylon').toLowerCase()
+  const useBabylon = engineMode !== 'three'
   const planetRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
   const [planetTransition, setPlanetTransition] = useState(false)
@@ -141,16 +146,29 @@ export function PlanetMap({
         >
           <div className="planet-canvas-wrap">
             <Suspense fallback={<div className={`planet-scene-fallback ${activePlanet.objectClass}`} />}>
-              <LazyPlanetScene3D
-                planetId={activePlanet.id}
-                ships={ships}
-                auraActive={auraActive}
-                isTapBurst={isTapBurst}
-                tapBurstTick={tapBurstTick}
-                pointerRef={cameraTargetRef}
-                lastInputAtRef={lastInputAtRef}
-                reducedMotion={reducedMotion}
-              />
+              {useBabylon ? (
+                <LazyPlanetSceneBabylon
+                  planetId={activePlanet.id}
+                  ships={ships}
+                  auraActive={auraActive}
+                  isTapBurst={isTapBurst}
+                  tapBurstTick={tapBurstTick}
+                  pointerRef={cameraTargetRef}
+                  lastInputAtRef={lastInputAtRef}
+                  reducedMotion={reducedMotion}
+                />
+              ) : (
+                <LazyPlanetScene3D
+                  planetId={activePlanet.id}
+                  ships={ships}
+                  auraActive={auraActive}
+                  isTapBurst={isTapBurst}
+                  tapBurstTick={tapBurstTick}
+                  pointerRef={cameraTargetRef}
+                  lastInputAtRef={lastInputAtRef}
+                  reducedMotion={reducedMotion}
+                />
+              )}
             </Suspense>
             {planetCaptionVisible && (
               <div className="planet-cinematic-caption">
