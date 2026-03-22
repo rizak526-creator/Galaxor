@@ -272,7 +272,9 @@ body {
 .planet-gas {
   background:
     radial-gradient(circle at 30% 22%, #fef3c7 0%, rgba(254, 243, 199, 0.2) 26%, transparent 46%),
-    repeating-linear-gradient(165deg, rgba(251, 191, 36, 0.2) 0 12px, rgba(249, 115, 22, 0.26) 12px 25px),
+    radial-gradient(90% 42% at 52% 24%, rgba(251, 191, 36, 0.2), transparent 72%),
+    radial-gradient(95% 46% at 46% 52%, rgba(251, 146, 60, 0.18), transparent 74%),
+    radial-gradient(90% 42% at 56% 76%, rgba(249, 115, 22, 0.16), transparent 74%),
     radial-gradient(circle at 50% 58%, #fb923c 0%, #ea580c 66%, #9a3412 100%);
 }
 
@@ -300,7 +302,8 @@ body {
 .planet-ruins {
   background:
     radial-gradient(circle at 32% 24%, rgba(254, 240, 138, 0.78), transparent 34%),
-    repeating-linear-gradient(140deg, rgba(120, 53, 15, 0.2) 0 14px, rgba(180, 83, 9, 0.3) 14px 28px),
+    radial-gradient(circle at 62% 64%, rgba(146, 64, 14, 0.25), transparent 36%),
+    radial-gradient(circle at 40% 74%, rgba(180, 83, 9, 0.22), transparent 34%),
     radial-gradient(circle at 42% 56%, #facc15 0%, #a16207 72%, #78350f 100%);
 }
 

@@ -113,7 +113,7 @@ function envFlag(name: string, fallback: boolean): boolean {
 const PLANETS_TEMPLATE: Planet[] = [
   {
     id: 'earth-like',
-    name: 'Earth-like',
+    name: 'Терра Нова',
     subtitle: 'Стабильные залежи кристаллов и мягкий климат',
     unlocked: true,
     unlockLevel: 1,
@@ -124,7 +124,7 @@ const PLANETS_TEMPLATE: Planet[] = [
   },
   {
     id: 'gas-giant',
-    name: 'Gas Giant',
+    name: 'Янтарный Титан',
     subtitle: 'Газовые вихри усиливают генераторы добычи',
     unlocked: false,
     unlockLevel: 3,
@@ -135,7 +135,7 @@ const PLANETS_TEMPLATE: Planet[] = [
   },
   {
     id: 'nebula',
-    name: 'Nebula',
+    name: 'Туманность Лиры',
     subtitle: 'Туманность замедляет добычу, но насыщает поле энергией',
     unlocked: false,
     unlockLevel: 5,
@@ -146,7 +146,7 @@ const PLANETS_TEMPLATE: Planet[] = [
   },
   {
     id: 'black-hole',
-    name: 'Black Hole',
+    name: 'Сингулярность Эреба',
     subtitle: 'Сильная гравитация резко повышает общий пассив',
     unlocked: false,
     unlockLevel: 8,
@@ -157,7 +157,7 @@ const PLANETS_TEMPLATE: Planet[] = [
   },
   {
     id: 'ice-world',
-    name: 'Ice World',
+    name: 'Крион',
     subtitle: 'Ледяные шахты стабильно питают добывающие установки',
     unlocked: false,
     unlockLevel: 12,
@@ -168,7 +168,7 @@ const PLANETS_TEMPLATE: Planet[] = [
   },
   {
     id: 'ancient-ruins',
-    name: 'Ancient Ruins',
+    name: 'Руины Предтеч',
     subtitle: 'Древние руины усиливают резонанс звёздной пыли',
     unlocked: false,
     unlockLevel: 18,
