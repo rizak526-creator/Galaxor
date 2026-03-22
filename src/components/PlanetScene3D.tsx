@@ -34,6 +34,32 @@ type PlanetVisual = {
   emissiveIntensity: number
 }
 
+type PlanetCinematic = {
+  cameraZ: number
+  cameraY: number
+  cameraFov: number
+  ambient: number
+  hemiColor: string
+  keyLightColor: string
+  keyLightIntensity: number
+  fillLightColor: string
+  fillLightIntensity: number
+  bloom: number
+}
+
+type OrbitProfile = {
+  radiusOffset: number
+  speed: number
+  tiltX: number
+  spinY: number
+  phase: number
+  bodyScale: number
+  reverse?: boolean
+  lineOpacity: number
+  lineThickness: number
+  trailColor: string
+}
+
 const THEMES: Record<string, Theme> = {
   'earth-like': {
     base: '#3b82f6',
@@ -92,6 +118,126 @@ const PLANET_VISUALS: Record<string, PlanetVisual> = {
   'black-hole': { radius: 1.1, roughness: 0.26, metalness: 0.32, clearcoat: 0.25, cloudOpacity: 0.05, emissiveIntensity: 0.46 },
   'ice-world': { radius: 1.52, roughness: 0.28, metalness: 0.22, clearcoat: 1, cloudOpacity: 0.09, emissiveIntensity: 0.24 },
   'ancient-ruins': { radius: 1.64, roughness: 0.74, metalness: 0.12, clearcoat: 0.52, cloudOpacity: 0.07, emissiveIntensity: 0.16 },
+}
+
+const PLANET_CINEMATIC: Record<string, PlanetCinematic> = {
+  'earth-like': {
+    cameraZ: 8.1,
+    cameraY: 0.04,
+    cameraFov: 40,
+    ambient: 0.46,
+    hemiColor: '#dbeafe',
+    keyLightColor: '#ffffff',
+    keyLightIntensity: 1.25,
+    fillLightColor: '#bfdbfe',
+    fillLightIntensity: 0.24,
+    bloom: 0.66,
+  },
+  'gas-giant': {
+    cameraZ: 8.6,
+    cameraY: 0.14,
+    cameraFov: 38,
+    ambient: 0.4,
+    hemiColor: '#fed7aa',
+    keyLightColor: '#fff7ed',
+    keyLightIntensity: 1.18,
+    fillLightColor: '#fdba74',
+    fillLightIntensity: 0.28,
+    bloom: 0.74,
+  },
+  nebula: {
+    cameraZ: 7.9,
+    cameraY: 0.08,
+    cameraFov: 42,
+    ambient: 0.36,
+    hemiColor: '#f0abfc',
+    keyLightColor: '#faf5ff',
+    keyLightIntensity: 1.15,
+    fillLightColor: '#c084fc',
+    fillLightIntensity: 0.3,
+    bloom: 0.84,
+  },
+  'black-hole': {
+    cameraZ: 7.4,
+    cameraY: 0.03,
+    cameraFov: 36,
+    ambient: 0.24,
+    hemiColor: '#7c2d12',
+    keyLightColor: '#fff7ed',
+    keyLightIntensity: 0.96,
+    fillLightColor: '#f97316',
+    fillLightIntensity: 0.38,
+    bloom: 0.92,
+  },
+  'ice-world': {
+    cameraZ: 8.0,
+    cameraY: 0.1,
+    cameraFov: 39,
+    ambient: 0.5,
+    hemiColor: '#eff6ff',
+    keyLightColor: '#ffffff',
+    keyLightIntensity: 1.3,
+    fillLightColor: '#93c5fd',
+    fillLightIntensity: 0.22,
+    bloom: 0.7,
+  },
+  'ancient-ruins': {
+    cameraZ: 8.45,
+    cameraY: 0.12,
+    cameraFov: 39,
+    ambient: 0.34,
+    hemiColor: '#fde68a',
+    keyLightColor: '#fffbeb',
+    keyLightIntensity: 1.08,
+    fillLightColor: '#f59e0b',
+    fillLightIntensity: 0.3,
+    bloom: 0.78,
+  },
+}
+
+function getOrbitProfile(
+  shipId: string,
+  index: number,
+  _planetRadius: number,
+): OrbitProfile {
+  if (shipId === 'mining-drone') {
+    return {
+      radiusOffset: 0.48,
+      speed: 0.34,
+      tiltX: 0.34,
+      spinY: 0.2,
+      phase: 0.6,
+      bodyScale: 1.42,
+      lineOpacity: 0.28,
+      lineThickness: 0.01,
+      trailColor: '#22d3ee',
+    }
+  }
+  if (shipId === 'explorer-scout') {
+    return {
+      radiusOffset: 0.86,
+      speed: 0.56,
+      tiltX: 0.8,
+      spinY: 1.1,
+      phase: 2.1,
+      bodyScale: 1.36,
+      lineOpacity: 0.24,
+      lineThickness: 0.008,
+      trailColor: '#a78bfa',
+    }
+  }
+  return {
+    radiusOffset: 1.2,
+    speed: 0.48,
+    tiltX: 1.05,
+    spinY: 1.9,
+    phase: 3.4 + index * 0.2,
+    bodyScale: 1.48,
+    reverse: true,
+    lineOpacity: 0.22,
+    lineThickness: 0.009,
+    trailColor: '#f97316',
+  }
 }
 
 function createPlanetTexture(planetId: string, theme: Theme): THREE.CanvasTexture {
@@ -373,6 +519,107 @@ function PlanetDecor({ planetId }: { planetId: string }) {
   return null
 }
 
+function PlanetBiomeFx({
+  planetId,
+  reducedMotion,
+}: {
+  planetId: string
+  reducedMotion: boolean
+}) {
+  const spinRef = useRef<THREE.Group | null>(null)
+  const pulseRef = useRef<THREE.Mesh | null>(null)
+
+  useFrame((state, delta) => {
+    if (spinRef.current) {
+      spinRef.current.rotation.y += delta * (reducedMotion ? 0.04 : 0.16)
+      spinRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.3) * 0.08
+    }
+    if (pulseRef.current) {
+      const s = 1 + Math.sin(state.clock.elapsedTime * 1.6) * 0.06
+      pulseRef.current.scale.setScalar(s)
+    }
+  })
+
+  if (planetId === 'earth-like') {
+    return (
+      <group ref={spinRef}>
+        <mesh rotation={[Math.PI / 2.05, 0.2, 0]}>
+          <torusGeometry args={[1.76, 0.022, 10, 120]} />
+          <meshBasicMaterial color="#34d399" transparent opacity={0.22} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+    )
+  }
+
+  if (planetId === 'gas-giant') {
+    return (
+      <group ref={spinRef}>
+        <Sparkles count={34} size={2.4} speed={0.42} scale={[4.6, 4.6, 4.6]} color="#fb923c" opacity={0.36} />
+        <mesh ref={pulseRef} position={[0.86, 0.22, 1.38]}>
+          <sphereGeometry args={[0.14, 16, 16]} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+    )
+  }
+
+  if (planetId === 'nebula') {
+    return (
+      <group ref={spinRef}>
+        <mesh rotation={[Math.PI / 2.6, 0, 0]}>
+          <torusGeometry args={[2.05, 0.18, 14, 160]} />
+          <meshBasicMaterial color="#c084fc" transparent opacity={0.16} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <Sparkles count={58} size={3} speed={0.22} scale={[5, 5, 5]} color="#e879f9" opacity={0.4} />
+      </group>
+    )
+  }
+
+  if (planetId === 'black-hole') {
+    return (
+      <group ref={spinRef}>
+        <mesh rotation={[Math.PI / 2, 0.5, 0]}>
+          <torusGeometry args={[1.95, 0.16, 16, 170]} />
+          <meshBasicMaterial color="#f97316" transparent opacity={0.24} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <mesh ref={pulseRef}>
+          <ringGeometry args={[0.78, 1.18, 64]} />
+          <meshBasicMaterial color="#fb923c" transparent opacity={0.22} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+    )
+  }
+
+  if (planetId === 'ice-world') {
+    return (
+      <group ref={spinRef}>
+        <mesh rotation={[Math.PI / 2.2, 0.4, 0]}>
+          <torusGeometry args={[1.94, 0.035, 12, 120]} />
+          <meshStandardMaterial color="#93c5fd" transparent opacity={0.36} />
+        </mesh>
+        <Sparkles count={22} size={2.2} speed={0.16} scale={[4.8, 4.8, 4.8]} color="#dbeafe" opacity={0.28} />
+      </group>
+    )
+  }
+
+  if (planetId === 'ancient-ruins') {
+    return (
+      <group ref={spinRef}>
+        <mesh rotation={[Math.PI / 2, 0, Math.PI / 6]}>
+          <torusGeometry args={[2.02, 0.02, 8, 64]} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.24} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, -Math.PI / 9]}>
+          <torusGeometry args={[1.86, 0.012, 6, 48]} />
+          <meshBasicMaterial color="#fde68a" transparent opacity={0.28} />
+        </mesh>
+      </group>
+    )
+  }
+
+  return null
+}
+
 function SceneContent({
   planetId,
   ships,
@@ -391,6 +638,12 @@ function SceneContent({
   const tapScaleTargetRef = useRef(1)
   const theme = THEMES[planetId] ?? THEMES['earth-like']
   const visual = PLANET_VISUALS[planetId] ?? PLANET_VISUALS['earth-like']
+  const cinematic = PLANET_CINEMATIC[planetId] ?? PLANET_CINEMATIC['earth-like']
+  const cameraBaseRef = useRef({
+    z: cinematic.cameraZ,
+    y: cinematic.cameraY,
+    fov: cinematic.cameraFov,
+  })
   const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
   const planetRadius = visual.radius
 
@@ -402,12 +655,11 @@ function SceneContent({
     () =>
       ships.map((ship, index) => ({
         id: ship.id,
-        radius: planetRadius + 0.58 + index * 0.34,
-        speed: 0.42 + index * 0.14,
-        tiltX: 0.45 + index * 0.24,
-        spinY: index * 1.1,
-        phase: index * 2.2,
-        bodyScale: 1.35 + Math.min(ship.level, 30) * 0.015,
+        ...getOrbitProfile(ship.id, index, planetRadius),
+        radius: planetRadius + getOrbitProfile(ship.id, index, planetRadius).radiusOffset,
+        bodyScale:
+          getOrbitProfile(ship.id, index, planetRadius).bodyScale +
+          Math.min(ship.level, 30) * 0.018,
       })),
     [planetRadius, ships],
   )
@@ -423,10 +675,30 @@ function SceneContent({
     cameraSmoothingRef.current.x += (target.x - cameraSmoothingRef.current.x) * 0.05
     cameraSmoothingRef.current.y += (target.y - cameraSmoothingRef.current.y) * 0.05
 
-    state.camera.position.x = cameraSmoothingRef.current.x
-    state.camera.position.y = cameraSmoothingRef.current.y
-    state.camera.position.z = 8.2
-    state.camera.lookAt(0, 0, 0)
+    const cam = state.camera as THREE.PerspectiveCamera
+    cam.position.x = cameraSmoothingRef.current.x
+    cameraBaseRef.current.z = THREE.MathUtils.lerp(
+      cameraBaseRef.current.z,
+      cinematic.cameraZ,
+      0.06,
+    )
+    cameraBaseRef.current.y = THREE.MathUtils.lerp(
+      cameraBaseRef.current.y,
+      cinematic.cameraY,
+      0.06,
+    )
+    cameraBaseRef.current.fov = THREE.MathUtils.lerp(
+      cameraBaseRef.current.fov,
+      cinematic.cameraFov,
+      0.06,
+    )
+    cam.position.y = cameraSmoothingRef.current.y + cameraBaseRef.current.y
+    cam.position.z = cameraBaseRef.current.z
+    if (Math.abs(cam.fov - cameraBaseRef.current.fov) > 0.05) {
+      cam.fov = cameraBaseRef.current.fov
+      cam.updateProjectionMatrix()
+    }
+    cam.lookAt(0, 0, 0)
 
     if (planetGroupRef.current) {
       const next = THREE.MathUtils.lerp(
@@ -454,7 +726,8 @@ function SceneContent({
       const orbit = orbitParams[i]
       if (!sat || !orbit) continue
       const timeScale = reducedMotion ? 0.3 : 1
-      const angle = t * orbit.speed * timeScale + orbit.phase
+      const direction = orbit.reverse ? -1 : 1
+      const angle = t * orbit.speed * timeScale * direction + orbit.phase
       const x = Math.cos(angle) * orbit.radius
       const z = Math.sin(angle) * orbit.radius
       sat.position.set(x, 0, z)
@@ -467,10 +740,18 @@ function SceneContent({
 
   return (
     <>
-      <ambientLight intensity={0.42} />
-      <hemisphereLight intensity={0.4} color={theme.cloud} groundColor="#020617" />
-      <directionalLight position={[4.4, 3.8, 4.6]} intensity={1.25} color="#ffffff" />
-      <directionalLight position={[-3.2, -2.6, -1.5]} intensity={0.2} color={theme.cloud} />
+      <ambientLight intensity={cinematic.ambient} />
+      <hemisphereLight intensity={0.4} color={cinematic.hemiColor} groundColor="#020617" />
+      <directionalLight
+        position={[4.4, 3.8, 4.6]}
+        intensity={cinematic.keyLightIntensity}
+        color={cinematic.keyLightColor}
+      />
+      <directionalLight
+        position={[-3.2, -2.6, -1.5]}
+        intensity={cinematic.fillLightIntensity}
+        color={cinematic.fillLightColor}
+      />
       <pointLight position={[-3.4, -2.2, 2.4]} intensity={0.7} color={theme.ring} />
       <Stars radius={36} depth={62} count={reducedMotion ? 380 : 1300} factor={2.2} fade speed={0.32} />
       <Sparkles
@@ -525,13 +806,14 @@ function SceneContent({
           </mesh>
         )}
         <PlanetDecor planetId={planetId} />
+        <PlanetBiomeFx planetId={planetId} reducedMotion={reducedMotion} />
       </group>
 
       {orbitParams.map((orbit, idx) => (
         <group key={`orbit-${orbit.id}`} rotation={[orbit.tiltX, orbit.spinY, 0]}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[orbit.radius, 0.006 + idx * 0.0018, 10, 220]} />
-            <meshBasicMaterial color={theme.orbit} transparent opacity={0.16 + idx * 0.06} />
+            <torusGeometry args={[orbit.radius, orbit.lineThickness + idx * 0.0012, 10, 220]} />
+            <meshBasicMaterial color={theme.orbit} transparent opacity={orbit.lineOpacity + idx * 0.02} />
           </mesh>
         </group>
       ))}
@@ -542,6 +824,14 @@ function SceneContent({
             <group scale={orbit.bodyScale}>
               <ShipModel shipId={orbit.id} ringColor={theme.ring} />
             </group>
+            <mesh position={[0, -0.02, -0.18]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.015, 0.06, 0.26, 10, 1, true]} />
+              <meshBasicMaterial color={orbit.trailColor} transparent opacity={0.4} blending={THREE.AdditiveBlending} />
+            </mesh>
+            <mesh position={[0, -0.02, -0.3]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.004, 0.03, 0.22, 8, 1, true]} />
+              <meshBasicMaterial color={orbit.trailColor} transparent opacity={0.22} blending={THREE.AdditiveBlending} />
+            </mesh>
             <pointLight position={[0, 0.02, 0.08]} intensity={0.14} color={theme.ring} distance={0.8} />
           </group>
         </group>
@@ -549,7 +839,12 @@ function SceneContent({
 
       {!reducedMotion && (
         <EffectComposer>
-          <Bloom intensity={0.72} luminanceThreshold={0.2} luminanceSmoothing={0.86} mipmapBlur />
+          <Bloom
+            intensity={cinematic.bloom}
+            luminanceThreshold={0.2}
+            luminanceSmoothing={0.86}
+            mipmapBlur
+          />
           <Noise opacity={0.016} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
           <Vignette eskil={false} offset={0.2} darkness={0.5} />
         </EffectComposer>
@@ -559,9 +854,10 @@ function SceneContent({
 }
 
 export function PlanetScene3D(props: PlanetScene3DProps) {
+  const cinematic = PLANET_CINEMATIC[props.planetId] ?? PLANET_CINEMATIC['earth-like']
   return (
     <Canvas
-      camera={{ position: [0, 0, 8.2], fov: 40 }}
+      camera={{ position: [0, cinematic.cameraY, cinematic.cameraZ], fov: cinematic.cameraFov }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
       className="planet-canvas"
