@@ -1742,7 +1742,7 @@ function App() {
           </p>
 
           <div className="mt-6 flex w-full justify-center">
-            <TonConnectButton className="!w-full max-w-xs" />
+            <TonConnectButton className="!mx-auto !w-full !max-w-xs" />
           </div>
         </div>
 
@@ -1775,7 +1775,7 @@ function App() {
               <div className="planet-canvas-wrap">
                 <Suspense
                   fallback={
-                    <div className="planet-scene-fallback planet-gas" />
+                    <div className="planet-scene-fallback starter-planet-fallback" />
                   }
                 >
                   {useBabylonPlanet ? (
