@@ -125,19 +125,38 @@ export function PlanetMap({
 
           {/* Визуал флота вокруг активной планеты */}
           <div className="ship-ring">
-            {ships.map((ship, index) => (
-              <div
-                key={ship.id}
-                className="ship-orbit"
-                style={{ animationDelay: `${index * 0.9}s` }}
-                title={`${ship.name} Lv.${ship.level}`}
-              >
-                <span className="ship-badge">
-                  {ship.icon}
-                  <small>Lv.{ship.level}</small>
-                </span>
-              </div>
-            ))}
+            {ships.map((ship, index) => {
+              const orbitSize = 332 + index * 34
+              const orbitDuration = 10 + index * 2.2
+              const orbitDirection = index % 2 === 0 ? 'normal' : 'reverse'
+              const shipScale = 1 + Math.min(ship.level, 40) * 0.01
+              const glowAlpha = Math.min(0.78, 0.3 + ship.level * 0.02)
+
+              return (
+                <div
+                  key={ship.id}
+                  className="ship-orbit-shell"
+                  style={
+                    {
+                      '--orbit-size': `${orbitSize}px`,
+                      '--orbit-duration': `${orbitDuration}s`,
+                      '--orbit-direction': orbitDirection,
+                      '--ship-scale': shipScale.toFixed(2),
+                      '--ship-glow': `rgba(56, 189, 248, ${glowAlpha.toFixed(2)})`,
+                    } as CSSProperties
+                  }
+                  title={`${ship.name} Lv.${ship.level}`}
+                >
+                  <span className="ship-orbit-line" />
+                  <div className="ship-orbit-rotator" style={{ animationDelay: `${index * 0.7}s` }}>
+                    <span className="ship-badge">
+                      {ship.icon}
+                      <small>Lv.{ship.level}</small>
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

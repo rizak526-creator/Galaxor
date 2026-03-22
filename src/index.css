@@ -222,30 +222,59 @@ body {
 
 .ship-ring {
   position: absolute;
-  width: 330px;
-  height: 330px;
+  width: 460px;
+  height: 460px;
   pointer-events: none;
 }
 
-.ship-orbit {
+.ship-orbit-shell {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--orbit-size, 332px);
+  height: var(--orbit-size, 332px);
+  transform: translate(-50%, -50%);
+}
+
+.ship-orbit-line {
   position: absolute;
   inset: 0;
-  animation: orbit 9s linear infinite;
+  border-radius: 50%;
+  border: 1px dashed rgba(148, 163, 184, 0.34);
+  box-shadow:
+    inset 0 0 14px rgba(56, 189, 248, 0.2),
+    0 0 16px rgba(56, 189, 248, 0.14);
+}
+
+.ship-orbit-rotator {
+  position: absolute;
+  inset: 0;
+  animation: orbit var(--orbit-duration, 9s) linear infinite;
+  animation-direction: var(--orbit-direction, normal);
 }
 
 .ship-badge {
   position: absolute;
-  top: -6px;
+  top: -2px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%) scale(var(--ship-scale, 1));
   display: inline-flex;
   gap: 4px;
   align-items: center;
-  padding: 3px 6px;
+  padding: 4px 7px;
   border-radius: 999px;
   font-size: 0.65rem;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(8, 20, 44, 0.9);
+  border: 1px solid rgba(103, 232, 249, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.3),
+    0 0 14px var(--ship-glow, rgba(56, 189, 248, 0.35));
+  color: #e0f2fe;
+}
+
+.ship-badge small {
+  font-size: 0.58rem;
+  opacity: 0.95;
 }
 
 @keyframes orbit {
@@ -448,6 +477,7 @@ body {
 }
 
 .reduced-fx .ship-orbit,
+.reduced-fx .ship-orbit-rotator,
 .reduced-fx .planet-transition,
 .reduced-fx .particle,
 .reduced-fx .screen-shake,
@@ -462,6 +492,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .ship-orbit,
+  .ship-orbit-rotator,
   .planet-transition,
   .particle,
   .screen-shake,
