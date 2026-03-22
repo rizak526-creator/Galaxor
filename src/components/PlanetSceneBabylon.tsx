@@ -86,6 +86,15 @@ const THEMES: Record<string, Theme> = {
   },
 }
 
+function hashPlanetId(value: string) {
+  let hash = 2166136261
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0) + 1
+}
+
 function makeAlbedo(scene: Scene, theme: Theme, seed: number) {
   const texture = new DynamicTexture(`planet-albedo-${seed}`, { width: 1024, height: 512 }, scene, false)
   const ctx = texture.getContext()
@@ -219,9 +228,12 @@ export function PlanetSceneBabylon({
     sceneRef.current = scene
 
     const theme = THEMES[planetId] ?? THEMES['earth-like']
-    const camera = new ArcRotateCamera('planet-camera', Math.PI * 0.5, Math.PI * 0.48, 6.8, Vector3.Zero(), scene)
-    camera.lowerRadiusLimit = 6.4
-    camera.upperRadiusLimit = 7.8
+    const planetSeed = hashPlanetId(planetId)
+    const isMobileViewport = engine.getRenderWidth() < 700
+    const baseCameraRadius = isMobileViewport ? 8.8 : 7.2
+    const camera = new ArcRotateCamera('planet-camera', Math.PI * 0.5, Math.PI * 0.48, baseCameraRadius, Vector3.Zero(), scene)
+    camera.lowerRadiusLimit = isMobileViewport ? 8.2 : 6.8
+    camera.upperRadiusLimit = isMobileViewport ? 10.4 : 8.8
     camera.wheelDeltaPercentage = 0
     camera.panningSensibility = 0
     camera.inputs.clear()
@@ -250,8 +262,8 @@ export function PlanetSceneBabylon({
     const planet = MeshBuilder.CreateSphere('planet', { diameter: 2.95, segments: forceLow ? 64 : 96 }, scene)
     planet.parent = planetPivot
     const planetMat = new PBRMaterial('planet-pbr', scene)
-    planetMat.albedoTexture = makeAlbedo(scene, theme, planetId.length * 17)
-    planetMat.bumpTexture = makeNormalLike(scene, planetId.length * 39)
+    planetMat.albedoTexture = makeAlbedo(scene, theme, planetSeed * 17)
+    planetMat.bumpTexture = makeNormalLike(scene, planetSeed * 39)
     planetMat.metallic = planetId === 'black-hole' ? 0.42 : 0.06
     planetMat.roughness = planetId === 'ice-world' ? 0.28 : planetId === 'gas-giant' ? 0.58 : 0.5
     planetMat.clearCoat.isEnabled = true
@@ -260,7 +272,7 @@ export function PlanetSceneBabylon({
     planetMat.environmentIntensity = 0.95
     planetMat.emissiveColor = Color3.FromHexString(theme.ring).scale(0.08)
     if (planetId === 'earth-like') {
-      planetMat.emissiveTexture = makeCityLights(scene, planetId.length * 91)
+      planetMat.emissiveTexture = makeCityLights(scene, planetSeed * 91)
       planetMat.emissiveColor = Color3.FromHexString('#ffd38b').scale(0.22)
     }
     planet.material = planetMat
@@ -303,9 +315,10 @@ export function PlanetSceneBabylon({
 
     // Orbit lines and satellites
     const satelliteNodes: TransformNode[] = []
+    const orbitScale = isMobileViewport ? 0.82 : 1
     const orbitProfiles = ships.map((ship, index) => ({
       id: ship.id,
-      radius: 1.9 + index * 0.48,
+      radius: (1.9 + index * 0.48) * orbitScale,
       tiltX: 1.05 - index * 0.22,
       spinY: index * 0.7,
       speed: 0.4 + index * 0.12,
@@ -333,42 +346,76 @@ export function PlanetSceneBabylon({
       const sat = new TransformNode(`sat-${profile.id}`, scene)
       sat.rotationQuaternion = null
 
-      const body = MeshBuilder.CreateBox(
-        `sat-body-${profile.id}`,
-        { width: 0.16, height: 0.07, depth: 0.13 },
-        scene,
-      )
-      body.parent = sat
-      const bodyMat = new PBRMaterial(`sat-body-mat-${profile.id}`, scene)
-      bodyMat.albedoColor = Color3.FromHexString(index === 1 ? '#dbeafe' : '#cbd5e1')
-      bodyMat.metallic = 0.92
-      bodyMat.roughness = 0.2
-      body.material = bodyMat
+      if (profile.id === 'mining-drone') {
+        const body = MeshBuilder.CreateBox(
+          `sat-body-${profile.id}`,
+          { width: 0.18, height: 0.08, depth: 0.15 },
+          scene,
+        )
+        body.parent = sat
+        const bodyMat = new PBRMaterial(`sat-body-mat-${profile.id}`, scene)
+        bodyMat.albedoColor = Color3.FromHexString('#cbd5e1')
+        bodyMat.metallic = 0.92
+        bodyMat.roughness = 0.2
+        body.material = bodyMat
 
-      const wingL = MeshBuilder.CreateBox(`sat-wing-l-${profile.id}`, { width: 0.1, height: 0.012, depth: 0.04 }, scene)
-      wingL.parent = sat
-      wingL.position.x = -0.12
-      wingL.position.y = 0.01
-      wingL.rotation.z = 0.18
-      const wingR = wingL.clone(`sat-wing-r-${profile.id}`)
-      wingR.parent = sat
-      wingR.position.x = 0.12
-      wingR.rotation.z = -0.18
+        const armL = MeshBuilder.CreateBox(`sat-arm-l-${profile.id}`, { width: 0.12, height: 0.018, depth: 0.05 }, scene)
+        armL.parent = sat
+        armL.position.x = -0.14
+        armL.position.y = -0.01
+        armL.rotation.z = 0.2
+        const armR = armL.clone(`sat-arm-r-${profile.id}`)
+        armR.parent = sat
+        armR.position.x = 0.14
+        armR.rotation.z = -0.2
+      } else if (profile.id === 'explorer-scout') {
+        const body = MeshBuilder.CreateCylinder(
+          `sat-body-${profile.id}`,
+          { height: 0.2, diameterTop: 0.05, diameterBottom: 0.06, tessellation: 14 },
+          scene,
+        )
+        body.parent = sat
+        body.rotation.x = Math.PI * 0.5
+        const bodyMat = new PBRMaterial(`sat-body-mat-${profile.id}`, scene)
+        bodyMat.albedoColor = Color3.FromHexString('#dbeafe')
+        bodyMat.metallic = 0.94
+        bodyMat.roughness = 0.18
+        body.material = bodyMat
 
-      const nose = MeshBuilder.CreateCylinder(
-        `sat-nose-${profile.id}`,
-        { height: 0.07, diameterTop: 0.01, diameterBottom: 0.045, tessellation: 10 },
-        scene,
-      )
-      nose.parent = sat
-      nose.position.z = 0.1
-      nose.rotation.x = Math.PI * 0.5
+        const ring = MeshBuilder.CreateTorus(`sat-ring-${profile.id}`, { diameter: 0.24, thickness: 0.015, tessellation: 42 }, scene)
+        ring.parent = sat
+        ring.rotation.x = Math.PI * 0.5
+        const ringMat = new StandardMaterial(`sat-ring-mat-${profile.id}`, scene)
+        ringMat.emissiveColor = Color3.FromHexString('#7dd3fc').scale(0.6)
+        ring.material = ringMat
+      } else {
+        const body = MeshBuilder.CreatePolyhedron(`sat-body-${profile.id}`, { type: 1, size: 0.12 }, scene)
+        body.parent = sat
+        const bodyMat = new PBRMaterial(`sat-body-mat-${profile.id}`, scene)
+        bodyMat.albedoColor = Color3.FromHexString('#e2e8f0')
+        bodyMat.metallic = 0.9
+        bodyMat.roughness = 0.24
+        body.material = bodyMat
+
+        for (let a = 0; a < 3; a += 1) {
+          const theta = (a / 3) * Math.PI * 2
+          const fin = MeshBuilder.CreateBox(
+            `sat-fin-${profile.id}-${a}`,
+            { width: 0.12, height: 0.016, depth: 0.035 },
+            scene,
+          )
+          fin.parent = sat
+          fin.position.x = Math.cos(theta) * 0.14
+          fin.position.y = Math.sin(theta) * 0.14
+          fin.rotation.z = theta
+        }
+      }
 
       const cockpit = MeshBuilder.CreateSphere(`sat-cockpit-${profile.id}`, { diameter: 0.045, segments: 12 }, scene)
       cockpit.parent = sat
-      cockpit.position.set(0, 0.03, 0.02)
+      cockpit.position.set(0, 0.03, 0.03)
       const cockpitMat = new StandardMaterial(`sat-cockpit-mat-${profile.id}`, scene)
-      cockpitMat.emissiveColor = Color3.FromHexString('#7dd3fc').scale(0.55)
+      cockpitMat.emissiveColor = Color3.FromHexString(profile.id === 'harvester-probe' ? '#fbbf24' : '#7dd3fc').scale(0.62)
       cockpitMat.alpha = 0.82
       cockpit.material = cockpitMat
 
@@ -426,6 +473,27 @@ export function PlanetSceneBabylon({
       cometNodes.push(comet)
     })
 
+    // Static stars without twinkling
+    const starCount = forceLow ? 70 : 140
+    for (let i = 0; i < starCount; i += 1) {
+      const phi = Math.acos(1 - 2 * ((i + 0.5) / starCount))
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i
+      const radius = 9 + (i % 11) * 0.35
+      const pos = new Vector3(
+        Math.cos(theta) * Math.sin(phi) * radius,
+        Math.cos(phi) * radius,
+        Math.sin(theta) * Math.sin(phi) * radius,
+      )
+      const star = new TransformNode(`star-${i}`, scene)
+      const node = MeshBuilder.CreateSphere(`star-body-${i}`, { diameter: 0.015 + ((i * 7) % 9) * 0.004, segments: 4 }, scene)
+      node.parent = star
+      const starMat = new StandardMaterial(`star-mat-${i}`, scene)
+      starMat.emissiveColor = Color3.FromHexString(i % 5 === 0 ? '#fde68a' : '#dbeafe').scale(0.95)
+      starMat.disableLighting = true
+      node.material = starMat
+      star.position.copyFrom(pos)
+    }
+
     if (!forceLow) {
       const pipeline = new DefaultRenderingPipeline('planet-pipeline', true, scene, [camera])
       pipeline.samples = 1
@@ -446,6 +514,9 @@ export function PlanetSceneBabylon({
     scene.onBeforeRenderObservable.add(() => {
       const dt = engine.getDeltaTime() / 1000
       const t = performance.now() * 0.001
+      const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight())
+      const targetRadius = baseCameraRadius + Math.max(0, (1.15 - aspect) * 1.7)
+      camera.radius += (targetRadius - camera.radius) * 0.06
       const targetX = Date.now() - lastInputAtRef.current > 1400 ? Math.sin(t * 0.45) * 0.18 : pointerRef.current.x * 0.24
       const targetY = Date.now() - lastInputAtRef.current > 1400 ? Math.cos(t * 0.38) * 0.12 : pointerRef.current.y * 0.2
       camera.alpha += (Math.PI * 0.5 + targetX - camera.alpha) * 0.04

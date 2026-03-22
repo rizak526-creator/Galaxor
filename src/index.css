@@ -946,7 +946,12 @@ body {
   z-index: 40;
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  overflow-y: auto;
 }
 
 .modal-card {
@@ -956,6 +961,27 @@ body {
   background: rgba(15, 23, 42, 0.96);
   padding: 18px;
   box-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+  max-height: min(88svh, 680px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-body {
+  max-height: min(52svh, 420px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .modal-card {
+    width: min(94vw, 420px);
+    max-height: calc(100svh - 24px);
+    padding: 14px;
+  }
+
+  .modal-body {
+    max-height: 48svh;
+  }
 }
 
 .screen-flash {

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, TouchEvent } from 'react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import type { AsteroidParticle } from './Asteroid'
 
@@ -63,6 +63,12 @@ export function PlanetMap({
   const [planetCaptionVisible, setPlanetCaptionVisible] = useState(false)
   const cameraTargetRef = useRef({ x: 0, y: 0 })
   const lastInputAtRef = useRef(0)
+  const chipTouchRef = useRef({
+    startX: 0,
+    startY: 0,
+    dragging: false,
+    lastDragAt: 0,
+  })
   const reducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -99,6 +105,39 @@ export function PlanetMap({
     lastInputAtRef.current = Date.now()
   }
 
+  const handleChipTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    const firstTouch = event.touches[0]
+    if (!firstTouch) return
+    chipTouchRef.current.startX = firstTouch.clientX
+    chipTouchRef.current.startY = firstTouch.clientY
+    chipTouchRef.current.dragging = false
+  }
+
+  const handleChipTouchMove = (event: TouchEvent<HTMLButtonElement>) => {
+    const firstTouch = event.touches[0]
+    if (!firstTouch) return
+    const dx = Math.abs(firstTouch.clientX - chipTouchRef.current.startX)
+    const dy = Math.abs(firstTouch.clientY - chipTouchRef.current.startY)
+    if (dx > 12 && dx > dy) {
+      chipTouchRef.current.dragging = true
+    }
+  }
+
+  const handleChipTouchEnd = () => {
+    if (chipTouchRef.current.dragging) {
+      chipTouchRef.current.lastDragAt = Date.now()
+    }
+    chipTouchRef.current.dragging = false
+  }
+
+  const handleChipClick = (planet: Planet) => {
+    if (!planet.unlocked) return
+    const wasSwipe =
+      chipTouchRef.current.dragging || Date.now() - chipTouchRef.current.lastDragAt < 260
+    if (wasSwipe) return
+    onSelectPlanet(planet.id)
+  }
+
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-4">
       <div className="planet-scroll">
@@ -108,7 +147,11 @@ export function PlanetMap({
             <button
               key={planet.id}
               type="button"
-              onClick={() => planet.unlocked && onSelectPlanet(planet.id)}
+              onClick={() => handleChipClick(planet)}
+              onTouchStart={handleChipTouchStart}
+              onTouchMove={handleChipTouchMove}
+              onTouchEnd={handleChipTouchEnd}
+              onTouchCancel={handleChipTouchEnd}
               className={`planet-chip ${isActive ? 'planet-chip-active' : ''}`}
               disabled={!planet.unlocked}
             >
@@ -148,6 +191,7 @@ export function PlanetMap({
             <Suspense fallback={<div className={`planet-scene-fallback ${activePlanet.objectClass}`} />}>
               {useBabylon ? (
                 <LazyPlanetSceneBabylon
+                  key={activePlanet.id}
                   planetId={activePlanet.id}
                   ships={ships}
                   auraActive={auraActive}
@@ -159,6 +203,7 @@ export function PlanetMap({
                 />
               ) : (
                 <LazyPlanetScene3D
+                  key={activePlanet.id}
                   planetId={activePlanet.id}
                   ships={ships}
                   auraActive={auraActive}
