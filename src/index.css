@@ -176,14 +176,12 @@ body {
 }
 
 .planet-stage {
-  --planet-size: min(300px, 64vw);
-  --orbit-outer-size: min(470px, 96vw);
+  --orbit-outer-size: min(470px, 100%);
+  --planet-size: clamp(228px, calc(var(--orbit-outer-size) * 0.7), 300px);
   --cam-rotate-x: 0deg;
   --cam-rotate-y: 0deg;
   --cam-shift-x: 0px;
   --cam-shift-y: 0px;
-  --cam-orbit-tilt: 62deg;
-  --cam-orbit-counter: -62deg;
   position: relative;
   width: min(100%, 520px);
   height: var(--orbit-outer-size);
@@ -193,6 +191,7 @@ body {
   align-items: center;
   overflow: hidden;
   perspective: 1100px;
+  padding-inline: 6px;
 }
 
 .planet-camera-rig {
@@ -252,7 +251,9 @@ body {
 
 .planet-rotation-layer,
 .planet-cloud-layer,
-.planet-night-shadow {
+.planet-night-shadow,
+.planet-atmo-ring,
+.planet-cinematic-haze {
   position: absolute;
   inset: 0;
   border-radius: 50%;
@@ -278,6 +279,24 @@ body {
     radial-gradient(circle at 110% 45%, rgba(2, 6, 23, 0.72), transparent 52%),
     linear-gradient(90deg, transparent 32%, rgba(2, 6, 23, 0.5) 100%);
   z-index: 3;
+}
+
+.planet-atmo-ring {
+  inset: -3%;
+  border: 2px solid rgba(var(--atmo-color, 56, 189, 248), 0.34);
+  box-shadow:
+    0 0 22px rgba(var(--atmo-color, 56, 189, 248), 0.32),
+    0 0 55px rgba(var(--atmo-color, 56, 189, 248), 0.16);
+  z-index: 2;
+}
+
+.planet-cinematic-haze {
+  inset: -12%;
+  background:
+    radial-gradient(circle at 78% 56%, rgba(2, 6, 23, 0.46), transparent 42%),
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.1), transparent 36%);
+  mix-blend-mode: screen;
+  z-index: 1;
 }
 
 .planet-transition {
@@ -319,6 +338,7 @@ body {
 }
 
 .planet-earth {
+  --atmo-color: 56, 189, 248;
   background:
     radial-gradient(circle at 38% 26%, #bbf7d0 0%, rgba(187, 247, 208, 0.2) 24%, transparent 44%),
     radial-gradient(circle at 65% 68%, rgba(30, 64, 175, 0.22), transparent 40%),
@@ -339,6 +359,7 @@ body {
 }
 
 .planet-gas {
+  --atmo-color: 251, 146, 60;
   background:
     radial-gradient(circle at 30% 22%, #fef3c7 0%, rgba(254, 243, 199, 0.2) 26%, transparent 46%),
     radial-gradient(90% 42% at 52% 24%, rgba(251, 191, 36, 0.2), transparent 72%),
@@ -365,6 +386,7 @@ body {
 }
 
 .planet-nebula {
+  --atmo-color: 167, 139, 250;
   background:
     radial-gradient(circle at 30% 24%, rgba(216, 180, 254, 0.8), transparent 36%),
     radial-gradient(circle at 68% 66%, rgba(236, 72, 153, 0.3), transparent 38%),
@@ -385,6 +407,7 @@ body {
 }
 
 .planet-blackhole {
+  --atmo-color: 245, 158, 11;
   background:
     radial-gradient(circle at 50% 50%, #020617 0, #030712 20%, #111827 34%, transparent 35%),
     radial-gradient(circle at 52% 48%, transparent 0 28%, rgba(245, 158, 11, 0.8) 42%, rgba(234, 88, 12, 0.45) 56%, transparent 72%),
@@ -404,6 +427,7 @@ body {
 }
 
 .planet-ice {
+  --atmo-color: 147, 197, 253;
   background:
     radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.8), transparent 36%),
     radial-gradient(circle at 74% 72%, rgba(59, 130, 246, 0.24), transparent 34%),
@@ -424,6 +448,7 @@ body {
 }
 
 .planet-ruins {
+  --atmo-color: 250, 204, 21;
   background:
     radial-gradient(circle at 32% 24%, rgba(254, 240, 138, 0.78), transparent 34%),
     radial-gradient(circle at 62% 64%, rgba(146, 64, 14, 0.25), transparent 36%),
@@ -445,12 +470,12 @@ body {
 
 .ship-ring {
   position: absolute;
-  width: var(--orbit-outer-size);
-  height: var(--orbit-outer-size);
+  width: calc(var(--orbit-outer-size) - 8px);
+  height: calc(var(--orbit-outer-size) - 8px);
   pointer-events: none;
-  transform: rotateX(var(--cam-orbit-tilt));
+  transform: rotateZ(0deg);
   transform-style: preserve-3d;
-  animation: orbitPrecession 22s linear infinite;
+  animation: orbitPrecession 30s linear infinite;
 }
 
 .ship-orbit-shell {
@@ -459,7 +484,12 @@ body {
   top: 50%;
   width: var(--orbit-size, 332px);
   height: var(--orbit-size, 332px);
-  transform: translate(-50%, -50%);
+  transform:
+    translate(-50%, -50%)
+    rotateZ(var(--orbit-spin, 0deg))
+    rotateX(var(--orbit-tilt, 60deg))
+    scaleY(var(--orbit-eccentricity, 0.78));
+  transform-style: preserve-3d;
 }
 
 .ship-orbit-line {
@@ -479,34 +509,51 @@ body {
   animation-direction: var(--orbit-direction, normal);
 }
 
-.ship-badge {
+.ship-satellite {
   position: absolute;
   top: -2px;
   left: 50%;
-  transform: translate(-50%, -50%) rotateX(var(--cam-orbit-counter)) scale(var(--ship-scale, 1));
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  padding: 4px 7px;
-  border-radius: 999px;
-  font-size: 0.65rem;
-  background: rgba(8, 20, 44, 0.9);
-  border: 1px solid rgba(103, 232, 249, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.3),
-    0 0 14px var(--ship-glow, rgba(56, 189, 248, 0.35));
-  color: #e0f2fe;
+  transform: translate(-50%, -50%) scale(var(--ship-scale, 1));
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
 }
 
-.ship-badge small {
-  font-size: 0.58rem;
-  opacity: 0.95;
+.ship-satellite-core {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.5), transparent 46%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(12, 74, 110, 0.95));
+  border: 1px solid rgba(125, 211, 252, 0.6);
+  box-shadow:
+    0 2px 10px rgba(2, 6, 23, 0.55),
+    0 0 14px var(--ship-glow, rgba(56, 189, 248, 0.35)),
+    inset 0 -6px 10px rgba(2, 6, 23, 0.45);
+}
+
+.ship-level {
+  position: absolute;
+  top: 20px;
+  right: -7px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.45);
 }
 
 .ship-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   display: block;
+  filter: drop-shadow(0 0 3px rgba(147, 197, 253, 0.55));
 }
 
 @keyframes orbit {
@@ -520,10 +567,10 @@ body {
 
 @keyframes orbitPrecession {
   from {
-    transform: rotateX(var(--cam-orbit-tilt)) rotateZ(0deg);
+    transform: rotateZ(0deg);
   }
   to {
-    transform: rotateX(var(--cam-orbit-tilt)) rotateZ(360deg);
+    transform: rotateZ(360deg);
   }
 }
 
@@ -767,13 +814,36 @@ body {
   .screen-flash {
     animation: none !important;
   }
+}
 
+@media (max-width: 768px) {
   .planet-stage {
-    --cam-rotate-x: 0deg;
-    --cam-rotate-y: 0deg;
-    --cam-shift-x: 0px;
-    --cam-shift-y: 0px;
-    --cam-orbit-tilt: 62deg;
-    --cam-orbit-counter: -62deg;
+    --orbit-outer-size: min(430px, 100%);
+    --planet-size: clamp(216px, calc(var(--orbit-outer-size) * 0.72), 286px);
+    perspective: 900px;
+  }
+
+  .ship-level {
+    top: 18px;
+    right: -6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .planet-stage {
+    --orbit-outer-size: min(360px, 100%);
+    --planet-size: clamp(204px, calc(var(--orbit-outer-size) * 0.74), 258px);
+    perspective: 760px;
+    padding-inline: 2px;
+  }
+
+  .planet-emblem {
+    width: 66px;
+    height: 66px;
+  }
+
+  .planet-emblem img {
+    width: 44px;
+    height: 44px;
   }
 }

@@ -101,14 +101,11 @@ export function PlanetMap({
       const rotateY = cameraCurrentRef.current.x * 8
       const shiftX = cameraCurrentRef.current.x * 11
       const shiftY = cameraCurrentRef.current.y * 7
-      const orbitTilt = 62 + cameraCurrentRef.current.y * 4.5
 
       stage.style.setProperty('--cam-rotate-x', `${rotateX.toFixed(2)}deg`)
       stage.style.setProperty('--cam-rotate-y', `${rotateY.toFixed(2)}deg`)
       stage.style.setProperty('--cam-shift-x', `${shiftX.toFixed(2)}px`)
       stage.style.setProperty('--cam-shift-y', `${shiftY.toFixed(2)}px`)
-      stage.style.setProperty('--cam-orbit-tilt', `${orbitTilt.toFixed(2)}deg`)
-      stage.style.setProperty('--cam-orbit-counter', `${(-orbitTilt).toFixed(2)}deg`)
 
       rafId = window.requestAnimationFrame(render)
     }
@@ -178,6 +175,8 @@ export function PlanetMap({
             >
               <span className={`planet-rotation-layer spin-${activePlanet.id}`} />
               <span className={`planet-cloud-layer cloud-${activePlanet.id}`} />
+              <span className="planet-atmo-ring" />
+              <span className="planet-cinematic-haze" />
               <span className="planet-night-shadow" />
               {particles.map((particle) => (
                 <div
@@ -203,11 +202,14 @@ export function PlanetMap({
             {/* Визуал флота вокруг активной планеты */}
             <div className="ship-ring">
               {ships.map((ship, index) => {
-                const orbitSize = 332 + index * 34
-                const orbitDuration = 10 + index * 2.2
+                const orbitSize = 278 + index * 34
+                const orbitDuration = 10.5 + index * 2.6
                 const orbitDirection = index % 2 === 0 ? 'normal' : 'reverse'
                 const shipScale = 1 + Math.min(ship.level, 40) * 0.01
                 const glowAlpha = Math.min(0.78, 0.3 + ship.level * 0.02)
+                const orbitTilt = 48 + (index % 3) * 12
+                const orbitSpin = index * 37
+                const orbitEccentricity = 0.72 + (index % 4) * 0.08
 
                 return (
                   <div
@@ -220,15 +222,20 @@ export function PlanetMap({
                         '--orbit-direction': orbitDirection,
                         '--ship-scale': shipScale.toFixed(2),
                         '--ship-glow': `rgba(56, 189, 248, ${glowAlpha.toFixed(2)})`,
+                      '--orbit-tilt': `${orbitTilt}deg`,
+                      '--orbit-spin': `${orbitSpin}deg`,
+                      '--orbit-eccentricity': orbitEccentricity.toFixed(2),
                       } as CSSProperties
                     }
                     title={`${ship.name} Lv.${ship.level}`}
                   >
                     <span className="ship-orbit-line" />
                     <div className="ship-orbit-rotator" style={{ animationDelay: `${index * 0.7}s` }}>
-                      <span className="ship-badge">
+                      <span className="ship-satellite">
+                        <span className="ship-satellite-core">
                         <img src={ship.icon} alt={ship.name} className="ship-icon" />
-                        <small>Lv.{ship.level}</small>
+                        </span>
+                        <small className="ship-level">Lv.{ship.level}</small>
                       </span>
                     </div>
                   </div>
