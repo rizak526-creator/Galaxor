@@ -63,6 +63,7 @@ export function PlanetMap({
   const [planetCaptionVisible, setPlanetCaptionVisible] = useState(false)
   const cameraTargetRef = useRef({ x: 0, y: 0 })
   const lastInputAtRef = useRef(0)
+  const lastPlanetTouchTapAtRef = useRef(0)
   const chipTouchRef = useRef({
     startX: 0,
     startY: 0,
@@ -228,11 +229,15 @@ export function PlanetMap({
             className={`planet-hit-surface ${
               planetTransition ? 'planet-transition' : ''
             } ${auraActive ? 'artifact-aura' : ''}`}
-            onClick={(event) => onTap(event.clientX, event.clientY)}
+            onClick={(event) => {
+              if (Date.now() - lastPlanetTouchTapAtRef.current < 500) return
+              onTap(event.clientX, event.clientY)
+            }}
             onTouchStart={(event) => {
               event.preventDefault()
               const firstTouch = event.touches[0]
               if (!firstTouch) return
+              lastPlanetTouchTapAtRef.current = Date.now()
               onTap(firstTouch.clientX, firstTouch.clientY)
             }}
           >

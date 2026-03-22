@@ -582,6 +582,7 @@ function App() {
   const starterHitRef = useRef<HTMLDivElement | null>(null)
   const starterCameraTargetRef = useRef({ x: 0, y: 0 })
   const starterLastInputAtRef = useRef(0)
+  const starterLastTouchTapAtRef = useRef(0)
   const referralLink = `https://t.me/Galaxor_bot?start=ref_${userId}`
   const walletConnected = Boolean(tonAddress)
   const activeChapter = CHAPTERS[currentChapter - 1] ?? CHAPTERS[0]
@@ -1807,12 +1808,15 @@ function App() {
                 ref={starterHitRef}
                 className="planet-hit-surface"
                 onClick={(event) =>
-                  handleStarterTap(event.clientX, event.clientY)
+                  Date.now() - starterLastTouchTapAtRef.current < 500
+                    ? undefined
+                    : handleStarterTap(event.clientX, event.clientY)
                 }
                 onTouchStart={(event) => {
                   event.preventDefault()
                   const firstTouch = event.touches[0]
                   if (!firstTouch) return
+                  starterLastTouchTapAtRef.current = Date.now()
                   handleStarterTap(firstTouch.clientX, firstTouch.clientY)
                 }}
               >
