@@ -190,7 +190,7 @@ body {
 
 .planet-stage {
   --orbit-outer-size: clamp(280px, calc(100vw - 52px), 560px);
-  --planet-size: clamp(200px, calc(var(--orbit-outer-size) * 0.56), 320px);
+  --planet-size: clamp(190px, calc(var(--orbit-outer-size) * 0.5), 300px);
   --cam-rotate-x: 0deg;
   --cam-rotate-y: 0deg;
   --cam-shift-x: 0px;
@@ -202,16 +202,16 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   perspective: 1100px;
   padding-inline: 6px;
 }
 
 .planet-canvas-wrap {
   position: absolute;
-  inset: 0;
+  inset: 8px;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   background:
     radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.08), transparent 55%),
     radial-gradient(circle at 22% 28%, rgba(255, 255, 255, 0.06), transparent 38%);

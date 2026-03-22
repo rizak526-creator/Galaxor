@@ -1,4 +1,4 @@
-import { Environment, Sparkles, Stars } from '@react-three/drei'
+import { Environment, Stars } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
@@ -613,7 +613,6 @@ function PlanetBiomeFx({
   if (planetId === 'gas-giant') {
     return (
       <group ref={spinRef}>
-        <Sparkles count={42} size={2.4} speed={0.32} scale={[5.2, 5.2, 5.2]} color="#d9a066" opacity={0.38} />
         <mesh ref={pulseRef} position={[0.86, 0.22, 1.38]}>
           <sphereGeometry args={[0.18, 16, 16]} />
           <meshBasicMaterial color="#d9a066" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
@@ -655,7 +654,6 @@ function PlanetBiomeFx({
           <torusGeometry args={[1.98, 0.046, 12, 120]} />
           <meshStandardMaterial color="#93c5fd" transparent opacity={0.48} />
         </mesh>
-        <Sparkles count={36} size={2.4} speed={0.2} scale={[5.2, 5.2, 5.2]} color="#dbeafe" opacity={0.42} />
       </group>
     )
   }
@@ -695,6 +693,48 @@ function getOrbitPoint(orbit: OrbitProfile & { radius: number }, theta: number) 
     tangentX: -sinT * a * cosP - cosT * b * sinP,
     tangentZ: -sinT * a * sinP + cosT * b * cosP,
   }
+}
+
+function CometField({ reducedMotion }: { reducedMotion: boolean }) {
+  const cometRefs = useRef<Array<THREE.Group | null>>([])
+  const cometDefs = useMemo(
+    () => [
+      { y: 1.7, z: -2.8, speed: 0.8, phase: 0, color: '#dbeafe', tail: '#93c5fd', size: 0.05 },
+      { y: -1.4, z: -2.2, speed: 0.62, phase: 2.3, color: '#fde68a', tail: '#f59e0b', size: 0.045 },
+      { y: 1.0, z: 2.4, speed: 0.7, phase: 4.1, color: '#c4b5fd', tail: '#a78bfa', size: 0.04 },
+    ],
+    [],
+  )
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    for (let i = 0; i < cometDefs.length; i += 1) {
+      const ref = cometRefs.current[i]
+      if (!ref) continue
+      const def = cometDefs[i]
+      const velocity = reducedMotion ? def.speed * 0.45 : def.speed
+      const x = ((t * velocity + def.phase) % 12) - 6
+      ref.position.set(x, def.y + Math.sin(t * 0.7 + def.phase) * 0.12, def.z)
+      ref.rotation.z = -0.36 + Math.sin(t * 0.9 + def.phase) * 0.06
+    }
+  })
+
+  return (
+    <>
+      {cometDefs.map((def, idx) => (
+        <group key={`comet-${idx}`} ref={(node: THREE.Group | null) => (cometRefs.current[idx] = node)}>
+          <mesh>
+            <sphereGeometry args={[def.size, 12, 12]} />
+            <meshBasicMaterial color={def.color} />
+          </mesh>
+          <mesh position={[-0.22, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <coneGeometry args={[def.size * 0.9, 0.52, 10]} />
+            <meshBasicMaterial color={def.tail} transparent opacity={0.52} />
+          </mesh>
+        </group>
+      ))}
+    </>
+  )
 }
 
 function SceneContent({
@@ -740,15 +780,14 @@ function SceneContent({
   const cinematic = PLANET_CINEMATIC[planetId] ?? PLANET_CINEMATIC['earth-like']
   const lightBlendRef = useRef<PlanetCinematic>(cinematic)
   const cameraBaseRef = useRef({
-    z: cinematic.cameraZ,
+    z: cinematic.cameraZ + 0.9,
     y: cinematic.cameraY,
     fov: cinematic.cameraFov,
   })
   const surfaceMap = useMemo(() => createPlanetTexture(planetId, theme), [planetId, theme])
   const planetRadius = visual.radius
   const qualityIsLow = reducedMotion || qualityPreset === 'low'
-  const starCount = qualityIsLow ? 420 : 1300
-  const sparklesCount = qualityIsLow ? 12 : 30
+  const starCount = qualityIsLow ? 220 : 380
   const sceneSegments = qualityIsLow ? 64 : 96
   const cloudSegments = qualityIsLow ? 42 : 64
   const fxSegments = qualityIsLow ? 34 : 48
@@ -842,7 +881,7 @@ function SceneContent({
     cam.position.x = cameraSmoothingRef.current.x
     cameraBaseRef.current.z = THREE.MathUtils.lerp(
       cameraBaseRef.current.z,
-      cinematic.cameraZ,
+      cinematic.cameraZ + 0.9,
       0.06,
     )
     cameraBaseRef.current.y = THREE.MathUtils.lerp(
@@ -982,15 +1021,8 @@ function SceneContent({
         color={cinematic.fillLightColor}
       />
       <pointLight position={[-3.4, -2.2, 2.4]} intensity={0.7} color={theme.ring} />
-      <Stars radius={36} depth={62} count={starCount} factor={2.2} fade speed={qualityIsLow ? 0.2 : 0.32} />
-      <Sparkles
-        count={sparklesCount}
-        size={qualityIsLow ? 1.7 : 2.3}
-        speed={qualityIsLow ? 0.12 : 0.18}
-        scale={[9, 9, 9]}
-        color={theme.ring}
-        opacity={qualityIsLow ? 0.24 : 0.34}
-      />
+      <Stars radius={36} depth={62} count={starCount} factor={1.7} fade speed={0} />
+      <CometField reducedMotion={reducedMotion} />
       {!qualityIsLow && <Environment preset="sunset" />}
 
       <group ref={planetGroupRef}>
@@ -1144,7 +1176,7 @@ export function PlanetScene3D(props: PlanetScene3DProps) {
   const dprRange: [number, number] = adaptiveQuality === 'low' ? [1, 1.1] : [1, 1.5]
   return (
     <Canvas
-      camera={{ position: [0, cinematic.cameraY, cinematic.cameraZ], fov: cinematic.cameraFov }}
+      camera={{ position: [0, cinematic.cameraY, cinematic.cameraZ + 0.9], fov: cinematic.cameraFov }}
       dpr={dprRange}
       gl={{ antialias: adaptiveQuality !== 'low', alpha: true, powerPreference: 'high-performance' }}
       className="planet-canvas"
