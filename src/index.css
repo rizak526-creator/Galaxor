@@ -200,6 +200,7 @@ body {
     0 28px 55px rgba(8, 47, 73, 0.45),
     0 0 68px rgba(34, 211, 238, 0.28),
     inset 0 -16px 30px rgba(2, 6, 23, 0.33);
+  isolation: isolate;
 }
 
 .planet-core::before {
@@ -212,6 +213,7 @@ body {
     radial-gradient(circle at 67% 74%, rgba(15, 23, 42, 0.3), transparent 38%);
   mix-blend-mode: screen;
   pointer-events: none;
+  z-index: 4;
 }
 
 .planet-core::after {
@@ -223,6 +225,37 @@ body {
     radial-gradient(circle at 72% 82%, rgba(2, 6, 23, 0.45), transparent 38%),
     radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.16), transparent 34%);
   pointer-events: none;
+  z-index: 5;
+}
+
+.planet-rotation-layer,
+.planet-cloud-layer,
+.planet-night-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.planet-rotation-layer {
+  background-size: 180% 100%;
+  animation: sphereSpin 9s linear infinite;
+  z-index: 1;
+}
+
+.planet-cloud-layer {
+  background-size: 220% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.35;
+  animation: cloudShift 16s linear infinite;
+  z-index: 2;
+}
+
+.planet-night-shadow {
+  background:
+    radial-gradient(circle at 110% 45%, rgba(2, 6, 23, 0.72), transparent 52%),
+    linear-gradient(90deg, transparent 32%, rgba(2, 6, 23, 0.5) 100%);
+  z-index: 3;
 }
 
 .planet-transition {
@@ -245,6 +278,7 @@ body {
     0 0 22px rgba(56, 189, 248, 0.35),
     inset 0 0 12px rgba(148, 163, 184, 0.22);
   backdrop-filter: blur(2px);
+  z-index: 7;
 }
 
 .planet-emblem img {
@@ -269,6 +303,19 @@ body {
     radial-gradient(circle at 34% 62%, #60a5fa 0%, #2563eb 58%, #0b3ca8 100%);
 }
 
+.spin-earth-like {
+  background:
+    radial-gradient(circle at 20% 40%, rgba(22, 163, 74, 0.68) 0 13%, transparent 14%),
+    radial-gradient(circle at 62% 58%, rgba(21, 128, 61, 0.58) 0 12%, transparent 13%),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.92) 0%, rgba(37, 99, 235, 0.98) 55%, rgba(30, 64, 175, 0.92) 100%);
+}
+
+.cloud-earth-like {
+  background:
+    radial-gradient(45% 18% at 26% 30%, rgba(255, 255, 255, 0.44), transparent 70%),
+    radial-gradient(50% 20% at 68% 64%, rgba(255, 255, 255, 0.35), transparent 72%);
+}
+
 .planet-gas {
   background:
     radial-gradient(circle at 30% 22%, #fef3c7 0%, rgba(254, 243, 199, 0.2) 26%, transparent 46%),
@@ -278,11 +325,41 @@ body {
     radial-gradient(circle at 50% 58%, #fb923c 0%, #ea580c 66%, #9a3412 100%);
 }
 
+.spin-gas-giant {
+  background:
+    repeating-linear-gradient(
+      160deg,
+      rgba(251, 191, 36, 0.42) 0 12px,
+      rgba(249, 115, 22, 0.36) 12px 24px,
+      rgba(234, 88, 12, 0.3) 24px 36px
+    ),
+    linear-gradient(90deg, #f59e0b 0%, #fb923c 45%, #c2410c 100%);
+}
+
+.cloud-gas-giant {
+  background:
+    radial-gradient(55% 22% at 30% 22%, rgba(255, 251, 235, 0.3), transparent 72%),
+    radial-gradient(65% 26% at 72% 76%, rgba(255, 237, 213, 0.2), transparent 76%);
+}
+
 .planet-nebula {
   background:
     radial-gradient(circle at 30% 24%, rgba(216, 180, 254, 0.8), transparent 36%),
     radial-gradient(circle at 68% 66%, rgba(236, 72, 153, 0.3), transparent 38%),
     radial-gradient(circle at 42% 60%, #a78bfa 0%, #4c1d95 62%, #1e1b4b 100%);
+}
+
+.spin-nebula {
+  background:
+    radial-gradient(circle at 25% 46%, rgba(192, 132, 252, 0.5) 0 16%, transparent 17%),
+    radial-gradient(circle at 66% 38%, rgba(236, 72, 153, 0.45) 0 14%, transparent 15%),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.85), rgba(76, 29, 149, 0.95));
+}
+
+.cloud-nebula {
+  background:
+    radial-gradient(55% 24% at 32% 24%, rgba(244, 114, 182, 0.2), transparent 74%),
+    radial-gradient(55% 24% at 72% 70%, rgba(196, 181, 253, 0.24), transparent 74%);
 }
 
 .planet-blackhole {
@@ -292,11 +369,36 @@ body {
     radial-gradient(circle at 50% 50%, #020617 0, #0f172a 80%, #020617 100%);
 }
 
+.spin-black-hole {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 24%, rgba(245, 158, 11, 0.84) 36%, rgba(249, 115, 22, 0.28) 50%, transparent 62%),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.95), rgba(15, 23, 42, 0.9));
+  animation-duration: 4.8s;
+}
+
+.cloud-black-hole {
+  background:
+    radial-gradient(50% 24% at 58% 34%, rgba(253, 186, 116, 0.15), transparent 76%);
+}
+
 .planet-ice {
   background:
     radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.8), transparent 36%),
     radial-gradient(circle at 74% 72%, rgba(59, 130, 246, 0.24), transparent 34%),
     linear-gradient(145deg, #dbeafe 0%, #7dd3fc 45%, #2563eb 100%);
+}
+
+.spin-ice-world {
+  background:
+    radial-gradient(circle at 30% 52%, rgba(255, 255, 255, 0.45) 0 14%, transparent 15%),
+    radial-gradient(circle at 72% 30%, rgba(191, 219, 254, 0.38) 0 16%, transparent 17%),
+    linear-gradient(90deg, rgba(219, 234, 254, 0.95), rgba(125, 211, 252, 0.9), rgba(59, 130, 246, 0.95));
+}
+
+.cloud-ice-world {
+  background:
+    radial-gradient(50% 20% at 34% 24%, rgba(255, 255, 255, 0.3), transparent 70%),
+    radial-gradient(44% 18% at 70% 72%, rgba(224, 242, 254, 0.2), transparent 72%);
 }
 
 .planet-ruins {
@@ -307,11 +409,26 @@ body {
     radial-gradient(circle at 42% 56%, #facc15 0%, #a16207 72%, #78350f 100%);
 }
 
+.spin-ancient-ruins {
+  background:
+    radial-gradient(circle at 34% 44%, rgba(180, 83, 9, 0.34) 0 14%, transparent 15%),
+    radial-gradient(circle at 66% 62%, rgba(120, 53, 15, 0.32) 0 13%, transparent 14%),
+    linear-gradient(90deg, rgba(250, 204, 21, 0.9), rgba(202, 138, 4, 0.95), rgba(120, 53, 15, 0.9));
+}
+
+.cloud-ancient-ruins {
+  background:
+    radial-gradient(54% 20% at 28% 28%, rgba(254, 243, 199, 0.22), transparent 74%);
+}
+
 .ship-ring {
   position: absolute;
   width: var(--orbit-outer-size);
   height: var(--orbit-outer-size);
   pointer-events: none;
+  transform: rotateX(64deg);
+  transform-style: preserve-3d;
+  animation: orbitPrecession 22s linear infinite;
 }
 
 .ship-orbit-shell {
@@ -344,7 +461,7 @@ body {
   position: absolute;
   top: -2px;
   left: 50%;
-  transform: translate(-50%, -50%) scale(var(--ship-scale, 1));
+  transform: translate(-50%, -50%) rotateX(-64deg) scale(var(--ship-scale, 1));
   display: inline-flex;
   gap: 4px;
   align-items: center;
@@ -376,6 +493,33 @@ body {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitPrecession {
+  from {
+    transform: rotateX(64deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(64deg) rotateZ(360deg);
+  }
+}
+
+@keyframes sphereSpin {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 180% 50%;
+  }
+}
+
+@keyframes cloudShift {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: -220% 50%;
   }
 }
 
@@ -424,6 +568,7 @@ body {
   animation: burst 0.8s forwards;
   pointer-events: none;
   box-shadow: 0 0 12px rgba(255, 235, 59, 0.9);
+  z-index: 6;
 }
 
 @keyframes burst {
@@ -571,6 +716,9 @@ body {
 
 .reduced-fx .ship-orbit,
 .reduced-fx .ship-orbit-rotator,
+.reduced-fx .planet-rotation-layer,
+.reduced-fx .planet-cloud-layer,
+.reduced-fx .ship-ring,
 .reduced-fx .planet-transition,
 .reduced-fx .particle,
 .reduced-fx .screen-shake,
@@ -586,6 +734,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ship-orbit,
   .ship-orbit-rotator,
+  .planet-rotation-layer,
+  .planet-cloud-layer,
+  .ship-ring,
   .planet-transition,
   .particle,
   .screen-shake,

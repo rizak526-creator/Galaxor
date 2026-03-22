@@ -106,6 +106,9 @@ export function PlanetMap({
               onTap(firstTouch.clientX, firstTouch.clientY)
             }}
           >
+            <span className={`planet-rotation-layer spin-${activePlanet.id}`} />
+            <span className={`planet-cloud-layer cloud-${activePlanet.id}`} />
+            <span className="planet-night-shadow" />
             {particles.map((particle) => (
               <div
                 key={particle.id}
