@@ -535,6 +535,7 @@ type ExhaustNodeFx = {
   baseX: number
   baseZ: number
   pulse: number
+  decay: number
 }
 
 type ShipExhaustFx = {
@@ -776,8 +777,8 @@ function createShipModel(
     flame.position.z = -0.24
     flame.rotation.x = Math.PI * 0.5
     const flameMat = new StandardMaterial(`ship-flame-mat-${id}-${idx}`, scene)
-    flameMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#f97316' : '#22d3ee')
-    flameMat.alpha = 0.74
+    flameMat.emissiveColor = Color3.FromHexString('#ff3b1f').scale(1.05)
+    flameMat.alpha = 0.82
     flameMat.disableLighting = true
     flame.material = flameMat
     exhaustCore.push({
@@ -785,35 +786,43 @@ function createShipModel(
       material: flameMat,
       baseLength: 1,
       baseWidth: 1,
-      baseAlpha: 0.74,
+      baseAlpha: 0.82,
       baseX: xPos,
       baseZ: -0.24,
       pulse: 10 + idx * 1.6,
+      decay: 1,
     })
 
-    const plume = MeshBuilder.CreateCylinder(
-      `ship-plume-${id}-${idx}`,
-      { diameterTop: 0.02, diameterBottom: 0.06, height: 0.34, tessellation: 10 },
-      scene,
-    )
-    plume.parent = shipVisual
-    plume.position.x = xPos
-    plume.position.z = -0.36
-    plume.rotation.x = Math.PI * 0.5
-    const plumeMat = new StandardMaterial(`ship-plume-mat-${id}-${idx}`, scene)
-    plumeMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#fb923c' : '#67e8f9').scale(0.78)
-    plumeMat.alpha = 0.34
-    plumeMat.disableLighting = true
-    plume.material = plumeMat
-    exhaustPlume.push({
-      node: plume,
-      material: plumeMat,
-      baseLength: 1,
-      baseWidth: 1,
-      baseAlpha: 0.34,
-      baseX: xPos,
-      baseZ: -0.36,
-      pulse: 6 + idx * 1.2,
+    ;[
+      { z: -0.3, len: 0.17, wTop: 0.015, wBottom: 0.042, alpha: 0.46, decay: 1 },
+      { z: -0.37, len: 0.21, wTop: 0.024, wBottom: 0.06, alpha: 0.24, decay: 0.62 },
+      { z: -0.45, len: 0.26, wTop: 0.038, wBottom: 0.09, alpha: 0.11, decay: 0.36 },
+    ].forEach((seg, segIndex) => {
+      const plume = MeshBuilder.CreateCylinder(
+        `ship-plume-${id}-${idx}-${segIndex}`,
+        { diameterTop: seg.wTop, diameterBottom: seg.wBottom, height: seg.len, tessellation: 10 },
+        scene,
+      )
+      plume.parent = shipVisual
+      plume.position.x = xPos
+      plume.position.z = seg.z
+      plume.rotation.x = Math.PI * 0.5
+      const plumeMat = new StandardMaterial(`ship-plume-mat-${id}-${idx}-${segIndex}`, scene)
+      plumeMat.emissiveColor = Color3.FromHexString('#ff4a1f').scale(1 - segIndex * 0.32)
+      plumeMat.alpha = seg.alpha
+      plumeMat.disableLighting = true
+      plume.material = plumeMat
+      exhaustPlume.push({
+        node: plume,
+        material: plumeMat,
+        baseLength: 1,
+        baseWidth: 1,
+        baseAlpha: seg.alpha,
+        baseX: xPos,
+        baseZ: seg.z,
+        pulse: 6 + idx * 1.2 + segIndex * 0.85,
+        decay: seg.decay,
+      })
     })
   })
 
@@ -1192,23 +1201,24 @@ export function PlanetSceneBabylon({
 
         // Animate exhaust jets to avoid static "image" effect.
         const thrustBase = 0.82 + Math.min(0.36, speed * 0.32)
+        const jetPower = Math.max(0.7, thrustBase)
         for (const flame of meta.exhaust.core) {
-          const throttle = Math.max(0.45, thrustBase + Math.sin(t * flame.pulse + phase * 2.8) * 0.2)
-          const width = flame.baseWidth * (0.86 + throttle * 0.26)
-          const length = flame.baseLength * (0.72 + throttle * 0.95)
+          const flicker = 0.82 + Math.sin(t * flame.pulse + phase * 2.8) * 0.18
+          const width = flame.baseWidth * (0.82 + jetPower * 0.22) * (0.9 + flicker * 0.12)
+          const length = flame.baseLength * (0.76 + jetPower * 0.9) * (0.9 + flicker * 0.14)
           flame.node.scaling.set(width, length, width)
           flame.node.position.x = flame.baseX
-          flame.node.position.z = flame.baseZ - throttle * 0.05
-          flame.material.alpha = Math.min(0.96, flame.baseAlpha * (0.72 + throttle * 0.58))
+          flame.node.position.z = flame.baseZ - jetPower * 0.04 * flame.decay
+          flame.material.alpha = Math.min(0.96, flame.baseAlpha * (0.78 + flicker * 0.36) * flame.decay)
         }
         for (const plume of meta.exhaust.plume) {
-          const throttle = Math.max(0.4, thrustBase + Math.sin(t * plume.pulse + phase * 1.9) * 0.17)
-          const width = plume.baseWidth * (0.95 + throttle * 0.34)
-          const length = plume.baseLength * (0.9 + throttle * 1.08)
+          const flicker = 0.86 + Math.sin(t * plume.pulse + phase * 1.9) * 0.14
+          const width = plume.baseWidth * (0.94 + jetPower * 0.2) * (0.9 + flicker * 0.06)
+          const length = plume.baseLength * (0.9 + jetPower * 0.52) * (0.92 + flicker * 0.08)
           plume.node.scaling.set(width, length, width)
           plume.node.position.x = plume.baseX
-          plume.node.position.z = plume.baseZ - throttle * 0.08
-          plume.material.alpha = Math.min(0.72, plume.baseAlpha * (0.6 + throttle * 0.6))
+          plume.node.position.z = plume.baseZ - jetPower * 0.045 * plume.decay
+          plume.material.alpha = Math.min(0.68, plume.baseAlpha * (0.64 + flicker * 0.2) * plume.decay)
         }
       }
 
