@@ -526,8 +526,29 @@ type OrbitProfileMeta = ShipOrbitLayout & {
   variant: ShipVariant
 }
 
+type ExhaustNodeFx = {
+  node: TransformNode
+  material: StandardMaterial
+  baseLength: number
+  baseWidth: number
+  baseAlpha: number
+  baseX: number
+  baseZ: number
+  pulse: number
+}
+
+type ShipExhaustFx = {
+  core: ExhaustNodeFx[]
+  plume: ExhaustNodeFx[]
+}
+
 type MoonProfileMeta = MoonLayout & {
   id: string
+}
+
+type ShipNodeMeta = {
+  profile: OrbitProfileMeta
+  exhaust: ShipExhaustFx
 }
 
 function makeMoonAlbedo(scene: Scene, seed: number, base: string, secondary: string) {
@@ -564,7 +585,7 @@ function createShipModel(
   variant: ShipVariant,
   id: string,
   shipIndex: number,
-) {
+): ShipExhaustFx {
   const accent =
     variant === 'interceptor' ? '#22d3ee' : variant === 'carrier' ? '#f97316' : '#a78bfa'
   const hullMat = new PBRMaterial(`ship-hull-mat-${id}`, scene)
@@ -731,6 +752,8 @@ function createShipModel(
   accentStrip.material = accentMat
 
   const enginePositions = variant === 'carrier' ? [-0.07, 0, 0.07] : [-0.04, 0.04]
+  const exhaustCore: ExhaustNodeFx[] = []
+  const exhaustPlume: ExhaustNodeFx[] = []
   enginePositions.forEach((xPos, idx) => {
     const nozzle = MeshBuilder.CreateCylinder(
       `ship-nozzle-${id}-${idx}`,
@@ -757,7 +780,44 @@ function createShipModel(
     flameMat.alpha = 0.74
     flameMat.disableLighting = true
     flame.material = flameMat
+    exhaustCore.push({
+      node: flame,
+      material: flameMat,
+      baseLength: 1,
+      baseWidth: 1,
+      baseAlpha: 0.74,
+      baseX: xPos,
+      baseZ: -0.24,
+      pulse: 10 + idx * 1.6,
+    })
+
+    const plume = MeshBuilder.CreateCylinder(
+      `ship-plume-${id}-${idx}`,
+      { diameterTop: 0.02, diameterBottom: 0.06, height: 0.34, tessellation: 10 },
+      scene,
+    )
+    plume.parent = shipVisual
+    plume.position.x = xPos
+    plume.position.z = -0.36
+    plume.rotation.x = Math.PI * 0.5
+    const plumeMat = new StandardMaterial(`ship-plume-mat-${id}-${idx}`, scene)
+    plumeMat.emissiveColor = Color3.FromHexString(shipIndex === 2 ? '#fb923c' : '#67e8f9').scale(0.78)
+    plumeMat.alpha = 0.34
+    plumeMat.disableLighting = true
+    plume.material = plumeMat
+    exhaustPlume.push({
+      node: plume,
+      material: plumeMat,
+      baseLength: 1,
+      baseWidth: 1,
+      baseAlpha: 0.34,
+      baseX: xPos,
+      baseZ: -0.36,
+      pulse: 6 + idx * 1.2,
+    })
   })
+
+  return { core: exhaustCore, plume: exhaustPlume }
 }
 
 export function PlanetSceneBabylon({
@@ -1003,10 +1063,10 @@ export function PlanetSceneBabylon({
       shipVisual.parent = shipNode
       // Shift geometry forward so orbit line does not cross through hull center.
       shipVisual.position.z = 0.11
-      createShipModel(scene, shipVisual, profile.variant, profile.id, index)
+      const exhaust = createShipModel(scene, shipVisual, profile.variant, profile.id, index)
 
       shipNodes.push(shipNode)
-      shipNode.metadata = profile
+      shipNode.metadata = { profile, exhaust } satisfies ShipNodeMeta
     })
 
     // Per-planet moons: unique size, color, texture and orbital placement.
@@ -1111,7 +1171,8 @@ export function PlanetSceneBabylon({
       auraMat.alpha = (auraActive ? 0.14 : 0.05) + tapGlowRef.current * 0.12
 
       for (const shipNode of shipNodes) {
-        const profile = shipNode.metadata as OrbitProfileMeta
+        const meta = shipNode.metadata as ShipNodeMeta
+        const profile = meta.profile
         const radius = profile.radius
         const phase = profile.phase
         const speed = profile.speed
@@ -1128,6 +1189,27 @@ export function PlanetSceneBabylon({
         shipNode.position.copyFrom(worldPos)
         const lookTarget = worldPos.add(worldTan)
         shipNode.lookAt(lookTarget)
+
+        // Animate exhaust jets to avoid static "image" effect.
+        const thrustBase = 0.82 + Math.min(0.36, speed * 0.32)
+        for (const flame of meta.exhaust.core) {
+          const throttle = Math.max(0.45, thrustBase + Math.sin(t * flame.pulse + phase * 2.8) * 0.2)
+          const width = flame.baseWidth * (0.86 + throttle * 0.26)
+          const length = flame.baseLength * (0.72 + throttle * 0.95)
+          flame.node.scaling.set(width, length, width)
+          flame.node.position.x = flame.baseX
+          flame.node.position.z = flame.baseZ - throttle * 0.05
+          flame.material.alpha = Math.min(0.96, flame.baseAlpha * (0.72 + throttle * 0.58))
+        }
+        for (const plume of meta.exhaust.plume) {
+          const throttle = Math.max(0.4, thrustBase + Math.sin(t * plume.pulse + phase * 1.9) * 0.17)
+          const width = plume.baseWidth * (0.95 + throttle * 0.34)
+          const length = plume.baseLength * (0.9 + throttle * 1.08)
+          plume.node.scaling.set(width, length, width)
+          plume.node.position.x = plume.baseX
+          plume.node.position.z = plume.baseZ - throttle * 0.08
+          plume.material.alpha = Math.min(0.72, plume.baseAlpha * (0.6 + throttle * 0.6))
+        }
       }
 
       for (const moonPivot of moonNodes) {
