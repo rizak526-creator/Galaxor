@@ -373,7 +373,7 @@ function makeMoonAlbedo(scene: Scene, seed: number, base: string, secondary: str
 
 function createShipModel(
   scene: Scene,
-  shipNode: TransformNode,
+  shipVisual: TransformNode,
   variant: ShipVariant,
   id: string,
   shipIndex: number,
@@ -385,30 +385,39 @@ function createShipModel(
       : variant === 'explorer'
         ? Color3.FromHexString('#e2e8f0')
         : Color3.FromHexString('#f1f5f9')
-  hullMat.metallic = 0.93
-  hullMat.roughness = variant === 'carrier' ? 0.25 : 0.18
+  hullMat.metallic = 0.98
+  hullMat.roughness = variant === 'carrier' ? 0.12 : 0.09
+  hullMat.clearCoat.isEnabled = true
+  hullMat.clearCoat.intensity = 0.78
+  hullMat.clearCoat.roughness = 0.08
+  hullMat.environmentIntensity = 1.2
 
   const darkHullMat = new PBRMaterial(`ship-dark-mat-${id}`, scene)
   darkHullMat.albedoColor = Color3.FromHexString('#475569')
-  darkHullMat.metallic = 0.7
-  darkHullMat.roughness = 0.35
+  darkHullMat.metallic = 0.92
+  darkHullMat.roughness = 0.16
+  darkHullMat.environmentIntensity = 1.05
 
   const wingMat = new PBRMaterial(`ship-wing-mat-${id}`, scene)
   wingMat.albedoColor = Color3.FromHexString('#cbd5e1')
-  wingMat.metallic = 0.86
-  wingMat.roughness = 0.22
+  wingMat.metallic = 0.97
+  wingMat.roughness = 0.11
+  wingMat.clearCoat.isEnabled = true
+  wingMat.clearCoat.intensity = 0.62
+  wingMat.clearCoat.roughness = 0.1
+  wingMat.environmentIntensity = 1.1
 
   const fuselage = MeshBuilder.CreateCylinder(
     `ship-fuselage-${id}`,
     { height: variant === 'carrier' ? 0.36 : 0.3, diameterTop: 0.06, diameterBottom: 0.09, tessellation: 18 },
     scene,
   )
-  fuselage.parent = shipNode
+  fuselage.parent = shipVisual
   fuselage.rotation.x = Math.PI * 0.5
   fuselage.material = hullMat
 
   const nose = MeshBuilder.CreateSphere(`ship-nose-${id}`, { diameter: 0.09, segments: 12 }, scene)
-  nose.parent = shipNode
+  nose.parent = shipVisual
   nose.position.z = 0.18
   nose.scaling.set(0.72, 0.62, 1.25)
   nose.material = hullMat
@@ -418,7 +427,7 @@ function createShipModel(
     { width: variant === 'carrier' ? 0.13 : 0.11, height: 0.055, depth: 0.11 },
     scene,
   )
-  cabin.parent = shipNode
+  cabin.parent = shipVisual
   cabin.position.y = 0.05
   cabin.position.z = 0.03
   cabin.material = darkHullMat
@@ -427,42 +436,42 @@ function createShipModel(
   const wingSweep = variant === 'interceptor' ? 0.18 : 0.1
   const wingDepth = variant === 'carrier' ? 0.14 : 0.11
   const wingL = MeshBuilder.CreateBox(`ship-wing-l-${id}`, { width: wingSpan, height: 0.01, depth: wingDepth }, scene)
-  wingL.parent = shipNode
+  wingL.parent = shipVisual
   wingL.position.x = -0.12
   wingL.position.z = -0.01
   wingL.rotation.z = wingSweep
   wingL.material = wingMat
   const wingR = wingL.clone(`ship-wing-r-${id}`)
-  wingR.parent = shipNode
+  wingR.parent = shipVisual
   wingR.position.x = 0.12
   wingR.rotation.z = -wingSweep
 
   const tailFin = MeshBuilder.CreateBox(`ship-tail-fin-${id}`, { width: 0.016, height: 0.09, depth: 0.06 }, scene)
-  tailFin.parent = shipNode
+  tailFin.parent = shipVisual
   tailFin.position.y = 0.06
   tailFin.position.z = -0.11
   tailFin.material = wingMat
 
   const elevL = MeshBuilder.CreateBox(`ship-tail-l-${id}`, { width: 0.07, height: 0.01, depth: 0.05 }, scene)
-  elevL.parent = shipNode
+  elevL.parent = shipVisual
   elevL.position.x = -0.06
   elevL.position.z = -0.12
   elevL.rotation.z = 0.08
   elevL.material = wingMat
   const elevR = elevL.clone(`ship-tail-r-${id}`)
-  elevR.parent = shipNode
+  elevR.parent = shipVisual
   elevR.position.x = 0.06
   elevR.rotation.z = -0.08
 
   if (variant === 'carrier') {
     const bay = MeshBuilder.CreateBox(`ship-bay-${id}`, { width: 0.12, height: 0.05, depth: 0.09 }, scene)
-    bay.parent = shipNode
+    bay.parent = shipVisual
     bay.position.y = -0.045
     bay.position.z = -0.02
     bay.material = darkHullMat
   } else if (variant === 'explorer') {
     const sensor = MeshBuilder.CreateTorus(`ship-sensor-${id}`, { diameter: 0.09, thickness: 0.009, tessellation: 30 }, scene)
-    sensor.parent = shipNode
+    sensor.parent = shipVisual
     sensor.position.z = 0.09
     sensor.rotation.x = Math.PI * 0.5
     const sensorMat = new StandardMaterial(`ship-sensor-mat-${id}`, scene)
@@ -472,7 +481,7 @@ function createShipModel(
   }
 
   const cockpit = MeshBuilder.CreateSphere(`ship-cockpit-${id}`, { diameter: 0.05, segments: 12 }, scene)
-  cockpit.parent = shipNode
+  cockpit.parent = shipVisual
   cockpit.position.set(0, 0.06, 0.12)
   cockpit.scaling.set(0.72, 0.62, 1.12)
   const cockpitMat = new StandardMaterial(`ship-cockpit-mat-${id}`, scene)
@@ -487,7 +496,7 @@ function createShipModel(
       { diameterTop: 0.025, diameterBottom: 0.03, height: 0.04, tessellation: 10 },
       scene,
     )
-    nozzle.parent = shipNode
+    nozzle.parent = shipVisual
     nozzle.position.x = xPos
     nozzle.position.z = -0.15
     nozzle.rotation.x = Math.PI * 0.5
@@ -498,7 +507,7 @@ function createShipModel(
       { diameterTop: 0.008, diameterBottom: 0.03, height: 0.2, tessellation: 10 },
       scene,
     )
-    flame.parent = shipNode
+    flame.parent = shipVisual
     flame.position.x = xPos
     flame.position.z = -0.24
     flame.rotation.x = Math.PI * 0.5
@@ -683,7 +692,11 @@ export function PlanetSceneBabylon({
 
       const shipNode = new TransformNode(`ship-${profile.id}-${index}`, scene)
       shipNode.rotationQuaternion = null
-      createShipModel(scene, shipNode, profile.variant, profile.id, index)
+      const shipVisual = new TransformNode(`ship-visual-${profile.id}-${index}`, scene)
+      shipVisual.parent = shipNode
+      // Shift geometry forward so orbit line does not cross through hull center.
+      shipVisual.position.z = 0.11
+      createShipModel(scene, shipVisual, profile.variant, profile.id, index)
 
       shipNodes.push(shipNode)
       shipNode.metadata = profile
@@ -806,15 +819,16 @@ export function PlanetSceneBabylon({
         const worldPos = Vector3.TransformCoordinates(local, orbitMatrix)
         const worldTan = Vector3.TransformNormal(localTangent, orbitMatrix).normalize()
         shipNode.position.copyFrom(worldPos)
-        const flatTan = new Vector3(worldTan.x, 0, worldTan.z)
-        if (flatTan.lengthSquared() < 0.000001) {
-          flatTan.copyFromFloats(worldTan.x, 0, 1)
-        } else {
-          flatTan.normalize()
-        }
-        shipNode.rotation.y = Math.atan2(flatTan.x, flatTan.z)
-        shipNode.rotation.x = 0
-        shipNode.rotation.z = 0
+        const lookTarget = worldPos.add(worldTan)
+        shipNode.lookAt(lookTarget)
+        const horizontal = Math.sqrt(worldTan.x * worldTan.x + worldTan.z * worldTan.z)
+        const pitch = -Math.atan2(worldTan.y, Math.max(0.0001, horizontal)) * 0.4
+        shipNode.rotation.x = pitch
+
+        // Light banking proportional to turning speed for more physical flight feel.
+        const bankSign = reverse ? -1 : 1
+        const bank = Math.max(-0.26, Math.min(0.26, speed * 0.11 * bankSign))
+        shipNode.rotation.z = bank
       }
 
       for (const moonPivot of moonNodes) {
